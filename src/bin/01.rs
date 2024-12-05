@@ -66,7 +66,12 @@ fn main() -> Result<()> {
             right.push(items.next().unwrap().parse::<i32>().unwrap());
         }
 
-        Ok(0)
+        let result: i32 = left.iter()
+        .map(|l| l * right.iter()
+            .map(|r| if r == l {1} else {0})
+            .sum::<i32>())
+        .sum();
+        Ok(result as usize)
     }
 
     assert_eq!(31, part2(BufReader::new(TEST.as_bytes()))?);
