@@ -48,17 +48,39 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+    
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut result = 0;
+        for line in reader.lines() {
+            let numbers: Vec<i32> = line?.split_whitespace()
+                .map(|str| str.parse::<i32>().unwrap())
+                .collect();
+
+            if is_valid(numbers.clone()) {
+                result += 1;
+                continue;
+            }
+
+            for i in 0..numbers.len() {
+                let mut attempt = numbers.clone();
+                attempt.remove(i);
+                if is_valid(attempt) {
+                    result += 1;
+                    break;
+                }
+            }
+        }
+        
+        Ok(result)
+
+    }
+    
+    assert_eq!(4, part2(BufReader::new(TEST.as_bytes()))?);
+    
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
