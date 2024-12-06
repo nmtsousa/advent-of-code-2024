@@ -30,42 +30,7 @@ fn main() -> Result<()> {
                 .map(|str| str.parse::<i32>().unwrap())
                 .collect();
 
-            let mut num_iter = numbers.iter();
-            let mut last = num_iter.next().unwrap();
-
-            let mut valid = true;
-            let mut direction = 0;
-            for next in num_iter {
-                let diff = next - last;
-                if direction == 0 {
-                    if diff > 0 {
-                        direction = 1;
-                    } else {
-                        direction = -1;
-                    }
-                    if direction == 0 {
-                        valid = false;
-                        break;
-                    }
-                }
-
-                let abs_diff = diff.abs();
-                if abs_diff < 1 || abs_diff > 3 {
-                    valid = false;
-                    break;
-                }
-
-                if direction > 0 && diff < 0 {
-                    valid = false;
-                    break;
-                }
-                if direction < 0 && diff > 0 {
-                    valid = false;
-                    break;
-                }
-                last = next;
-            }
-
+            let valid = is_valid(numbers);
             if valid {
                 result += 1;
             }
@@ -97,4 +62,43 @@ fn main() -> Result<()> {
     //endregion
 
     Ok(())
+}
+
+fn is_valid(numbers: Vec<i32>) -> bool {
+    let mut num_iter = numbers.iter();
+    let mut last = num_iter.next().unwrap();
+
+    let mut valid = true;
+    let mut direction = 0;
+    for next in num_iter {
+        let diff = next - last;
+        if direction == 0 {
+            if diff > 0 {
+                direction = 1;
+            } else {
+                direction = -1;
+            }
+            if direction == 0 {
+                valid = false;
+                break;
+            }
+        }
+
+        let abs_diff = diff.abs();
+        if abs_diff < 1 || abs_diff > 3 {
+            valid = false;
+            break;
+        }
+
+        if direction > 0 && diff < 0 {
+            valid = false;
+            break;
+        }
+        if direction < 0 && diff > 0 {
+            valid = false;
+            break;
+        }
+        last = next;
+    }
+    valid
 }
