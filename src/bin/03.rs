@@ -12,6 +12,9 @@ const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 const TEST: &str = "\
 xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))
 ";
+const TEST_2: &str = "\
+xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))
+";
 
 fn main() -> Result<()> {
     start_day(DAY);
@@ -42,17 +45,40 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+    
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut result : usize = 0;
+        let mut calc = true;
+        let re = Regex::new(r"mul\(([0-9]{1,3}),([0-9]{1,3})\)|don't\(\)|do\(\)")?;
+        for line in reader.lines() {
+            result += re.captures_iter(&line.unwrap())
+                .map(|cap| {
+                    let mut a  = 0;
+                    let mut b = 0;
+                    match cap.get(0).unwrap().as_str() {
+                        "do()" => calc = true,
+                        "don't()" => calc = false,
+                        _ => {
+                            a = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
+                            b = cap.get(2).unwrap().as_str().parse::<usize>().unwrap();
+                        }
+                    };
+                    if calc {
+                        a * b
+                    } else {
+                        0
+                    }
+                }).sum::<usize>();
+        }
+        Ok(result)
+    }
+    
+    assert_eq!(48, part2(BufReader::new(TEST_2.as_bytes()))?);
+    
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
