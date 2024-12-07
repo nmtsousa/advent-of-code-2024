@@ -91,6 +91,30 @@ impl RuleList {
 
         true
     }
+
+    fn fix_update(&self, mut update: Vec<String>) -> Vec<String> {
+        let mut run_fixes = true;
+        while run_fixes {
+            run_fixes = false;
+
+            for rule in self.list.iter() {
+                let page_index = update.iter().position(|r| *r == rule.page);
+                let before_index = update.iter().position(|r| *r == rule.before);
+
+                if let Some(pi) = page_index {
+                    if let Some(bi) = before_index {
+                        if pi > bi {
+                            let value = update.remove(pi);
+                            update.insert(bi, value);
+                            run_fixes = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        update
+    }
 }
 
 fn main() -> Result<()> {
@@ -135,17 +159,42 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut rule_list = RuleList::new();
+        let mut load = true;
+        let mut result = 0;
+
+        for line in reader.lines() {
+            match line {
+                Result::Ok(read) if read.is_empty() => load = false,
+                Result::Ok(read) => {
+                    if load {
+                        rule_list.add(Rule::from(read));
+                    } else {
+                        let mut update: Vec<String> =
+                            read.split(",").map(|str| str.to_string()).collect();
+                        if !rule_list.is_valid(&update) {
+                            update = rule_list.fix_update(update);
+                            let middle = update.len() / 2;
+                            let value = update[middle].parse::<usize>().unwrap();
+                            result += value;
+                        }
+                    }
+                }
+                Err(_) => panic!("Error reading"),
+            }
+        }
+
+        Ok(result)
+    }
+
+    assert_eq!(123, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
