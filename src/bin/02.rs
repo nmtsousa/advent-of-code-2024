@@ -1,9 +1,9 @@
+use adv_code_2024::*;
 use anyhow::*;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use adv_code_2024::*;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 const DAY: &str = "02";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
@@ -26,7 +26,8 @@ fn main() -> Result<()> {
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
         let mut result = 0;
         for line in reader.lines() {
-            let numbers: Vec<i32> = line?.split_whitespace()
+            let numbers: Vec<i32> = line?
+                .split_whitespace()
                 .map(|str| str.parse::<i32>().unwrap())
                 .collect();
 
@@ -35,7 +36,7 @@ fn main() -> Result<()> {
                 result += 1;
             }
         }
-        
+
         Ok(result)
     }
 
@@ -49,11 +50,12 @@ fn main() -> Result<()> {
 
     //region Part 2
     println!("\n=== Part 2 ===");
-    
+
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
         let mut result = 0;
         for line in reader.lines() {
-            let numbers: Vec<i32> = line?.split_whitespace()
+            let numbers: Vec<i32> = line?
+                .split_whitespace()
                 .map(|str| str.parse::<i32>().unwrap())
                 .collect();
 
@@ -71,13 +73,12 @@ fn main() -> Result<()> {
                 }
             }
         }
-        
-        Ok(result)
 
+        Ok(result)
     }
-    
+
     assert_eq!(4, part2(BufReader::new(TEST.as_bytes()))?);
-    
+
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part2(input_file)?);
     println!("Result = {}", result);
@@ -107,7 +108,7 @@ fn is_valid(numbers: Vec<i32>) -> bool {
         }
 
         let abs_diff = diff.abs();
-        if abs_diff < 1 || abs_diff > 3 {
+        if !(1..=3).contains(&abs_diff) {
             valid = false;
             break;
         }
