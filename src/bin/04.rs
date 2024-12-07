@@ -23,50 +23,50 @@ MXMXAXMASX
 
 struct CharMatrix {
     matrix: Vec<String>,
-    row_count: usize,
-    col_count: usize,
+    row_count: i32,
+    col_count: i32,
 }
 
 impl CharMatrix {
     fn new(matrix: Vec<String>) -> CharMatrix {
-        let row_count = matrix.len();
+        let row_count: usize = matrix.len();
         let col_count = matrix
             .first()
             .expect("There is a firt line in the problem")
             .len();
         CharMatrix {
             matrix,
-            row_count,
-            col_count,
+            row_count: row_count.try_into().unwrap(),
+            col_count: col_count.try_into().unwrap(),
         }
     }
 
-    fn row_count(&self) -> usize {
+    fn row_count(&self) -> i32 {
         self.row_count
     }
 
-    fn col_count(&self) -> usize {
+    fn col_count(&self) -> i32 {
         self.col_count
     }
 
-    fn char_at(&self, row: usize, col: usize) -> &str {
+    fn char_at(&self, row: i32, col: i32) -> &str {
         self.matrix
-            .get(row)
+            .get(row as usize)
             .expect("row exists")
-            .get(col..col + 1)
+            .get(col as usize..(col + 1) as usize)
             .unwrap()
     }
 
     fn find_string(
         &self,
-        start_row: usize,
-        start_col: usize,
+        start_row: i32,
+        start_col: i32,
         row_step: i32,
         col_step: i32,
         needle: &str,
     ) -> bool {
-        let mut row: i32 = start_row as i32;
-        let mut col: i32 = start_col as i32;
+        let mut row = start_row;
+        let mut col = start_col;
         let mut needle_part = needle.chars();
 
         while let Some(char) = needle_part.next() {
@@ -157,17 +157,68 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let input: Vec<String> = reader.lines().map(|r| r.expect("Line was read.")).collect();
+
+        let matrix = CharMatrix::new(input);
+        let row_count = matrix.row_count();
+        let col_count = matrix.col_count();
+        let mut result = 0;
+
+        for row in 0..row_count {
+            for col in 0..col_count {
+                if matrix.char_at(row, col) != "A" {
+                    continue;
+                }
+
+                // M.M
+                // .A.
+                // S.S
+                if matrix.find_string(row - 1, col - 1, 1, 1, "MAS")
+                    && matrix.find_string(row - 1, col + 1, 1, -1, "MAS")
+                {
+                    result += 1;
+                }
+
+                // M.S
+                // .A.
+                // M.S
+                if matrix.find_string(row - 1, col - 1, 1, 1, "MAS")
+                    && matrix.find_string(row + 1, col - 1, -1, 1, "MAS")
+                {
+                    result += 1;
+                }
+
+                // S.M
+                // .A.
+                // S.M
+                if matrix.find_string(row - 1, col + 1, 1, -1, "MAS")
+                    && matrix.find_string(row + 1, col + 1, -1, -1, "MAS")
+                {
+                    result += 1;
+                }
+
+                // S.S
+                // .A.
+                // M.M
+                if matrix.find_string(row + 1, col - 1, -1, 1, "MAS")
+                    && matrix.find_string(row + 1, col + 1, -1, -1, "MAS")
+                {
+                    result += 1;
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    assert_eq!(9, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
