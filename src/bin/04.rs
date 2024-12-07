@@ -67,13 +67,13 @@ impl CharMatrix {
     ) -> bool {
         let mut row = start_row;
         let mut col = start_col;
-        let mut needle_part = needle.chars();
+        let needle_part = needle.chars();
 
-        while let Some(char) = needle_part.next() {
-            if row < 0 || row >= self.row_count() as i32 {
+        for char in needle_part {
+            if row < 0 || row >= self.row_count() {
                 return false;
             }
-            if col < 0 || col >= self.col_count() as i32 {
+            if col < 0 || col >= self.col_count() {
                 return false;
             }
 
