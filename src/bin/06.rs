@@ -1,5 +1,6 @@
 use adv_code_2024::*;
 use anyhow::*;
+use bitflags::bitflags;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
 use itertools::Itertools;
@@ -22,19 +23,25 @@ const TEST: &str = "\
 ......#...
 ";
 
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    struct Directions: u32 {
+        const UP = 0b00000001;
+        const RIGHT = 0b00000010;
+        const DOWN = 0b00000100;
+        const LEFT = 0b00001000;
+
+        const UP_DOWN = Self::UP.bits() | Self::DOWN.bits();
+        const LEFT_RIGTH = Self::LEFT.bits() | Self::RIGHT.bits();
+
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum Tile {
     Empty,
     Obstacle,
-    Visited,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
+    Visited { dirs: Directions },
 }
 
 #[derive(Debug)]
@@ -42,7 +49,7 @@ struct Game {
     map: Vec<Vec<Tile>>,
     x: i32,
     y: i32,
-    d: Direction,
+    d: Directions,
 }
 
 impl Game {
@@ -59,7 +66,7 @@ impl Game {
             map: vec![convert_row(&first_row)],
             x,
             y,
-            d: Direction::Up,
+            d: Directions::UP,
         }
     }
 
@@ -88,41 +95,49 @@ impl Game {
     }
 
     fn tick(&mut self) {
-        self.map[self.y as usize][self.x as usize] = Tile::Visited;
+        match self.map[self.y as usize][self.x as usize] {
+            Tile::Visited { dirs } => {
+                self.map[self.y as usize][self.x as usize] = Tile::Visited {
+                    dirs: dirs | self.d,
+                }
+            }
+            _ => self.map[self.y as usize][self.x as usize] = Tile::Visited { dirs: self.d },
+        }
 
         match self.d {
-            Direction::Up => {
+            Directions::UP => {
                 if self.is_obstacle(self.x, self.y - 1) {
-                    self.d = Direction::Right;
+                    self.d = Directions::RIGHT;
                     self.x += 1;
                 } else {
                     self.y -= 1;
                 }
             }
-            Direction::Right => {
+            Directions::RIGHT => {
                 if self.is_obstacle(self.x + 1, self.y) {
-                    self.d = Direction::Down;
+                    self.d = Directions::DOWN;
                     self.y += 1;
                 } else {
                     self.x += 1;
                 }
             }
-            Direction::Down => {
+            Directions::DOWN => {
                 if self.is_obstacle(self.x, self.y + 1) {
-                    self.d = Direction::Left;
+                    self.d = Directions::LEFT;
                     self.x -= 1;
                 } else {
                     self.y += 1;
                 }
             }
-            Direction::Left => {
+            Directions::LEFT => {
                 if (self.is_obstacle(self.x - 1, self.y)) {
-                    self.d = Direction::Up;
+                    self.d = Directions::UP;
                     self.y -= 1;
                 } else {
                     self.x -= 1;
                 }
             }
+            _ => panic!("Unexpected current direction."),
         }
     }
 
@@ -130,8 +145,9 @@ impl Game {
         let mut result: usize = 0;
         for row in &self.map {
             for tile in row {
-                if *tile == Tile::Visited {
-                    result += 1;
+                match *tile {
+                    Tile::Visited { dirs: _ } => result += 1,
+                    _ => {}
                 }
             }
         }
@@ -146,7 +162,19 @@ impl Game {
                 .map(|tile| match tile {
                     Tile::Empty => ".",
                     Tile::Obstacle => "#",
-                    Tile::Visited => "X",
+                    Tile::Visited { dirs } => {
+                        if dirs.intersects(Directions::UP_DOWN)
+                            && dirs.intersects(Directions::LEFT_RIGTH)
+                        {
+                            "+"
+                        } else if dirs.intersects(Directions::UP_DOWN) {
+                            "|"
+                        } else if dirs.intersects(Directions::LEFT_RIGTH) {
+                            return "-";
+                        } else {
+                            "X"
+                        }
+                    }
                 })
                 .join("");
             println!("{}", row_str);
