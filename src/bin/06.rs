@@ -44,6 +44,12 @@ enum Tile {
     Visited { dirs: Directions },
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum SimulationResult {
+    GuardExited,
+    CycleDetected,
+}
+
 #[derive(Debug)]
 struct Game {
     map: Vec<Vec<Tile>>,
@@ -94,9 +100,12 @@ impl Game {
         self.in_map(x, y) && self.map[y as usize][x as usize] == Tile::Obstacle
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> Option<SimulationResult> {
         match self.map[self.y as usize][self.x as usize] {
             Tile::Visited { dirs } => {
+                if dirs.intersects(self.d) {
+                    return Some(SimulationResult::CycleDetected);
+                }
                 self.map[self.y as usize][self.x as usize] = Tile::Visited {
                     dirs: dirs | self.d,
                 }
@@ -130,7 +139,7 @@ impl Game {
                 }
             }
             Directions::LEFT => {
-                if (self.is_obstacle(self.x - 1, self.y)) {
+                if self.is_obstacle(self.x - 1, self.y) {
                     self.d = Directions::UP;
                     self.y -= 1;
                 } else {
@@ -138,16 +147,17 @@ impl Game {
                 }
             }
             _ => panic!("Unexpected current direction."),
-        }
+        };
+
+        None
     }
 
     fn count_visited(&self) -> usize {
         let mut result: usize = 0;
         for row in &self.map {
             for tile in row {
-                match *tile {
-                    Tile::Visited { dirs: _ } => result += 1,
-                    _ => {}
+                if let Tile::Visited { dirs: _ } = *tile {
+                    result += 1
                 }
             }
         }
@@ -181,6 +191,16 @@ impl Game {
         }
         println!();
     }
+
+    fn run_simulation(&mut self) -> SimulationResult {
+        while self.guard_in_map() {
+            if let Some(result) = self.tick() {
+                return result;
+            }
+        }
+
+        SimulationResult::GuardExited
+    }
 }
 
 fn convert_row(row: &str) -> Vec<Tile> {
@@ -211,9 +231,7 @@ fn main() -> Result<()> {
             game.push_row(line);
         }
 
-        while game.guard_in_map() {
-            game.tick();
-        }
+        assert_eq!(SimulationResult::GuardExited, game.run_simulation());
 
         Ok(game.count_visited())
     }
