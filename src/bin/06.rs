@@ -54,8 +54,8 @@ struct Game {
     map: Vec<Vec<Tile>>,
     x: i32,
     y: i32,
-    row_count: usize,
     col_count: usize,
+    row_count: usize,
     d: Directions,
 }
 
@@ -65,8 +65,8 @@ impl Clone for Game {
             map: self.map.iter().map(|row| row.to_vec()).collect(),
             x: self.x,
             y: self.y,
-            row_count: self.row_count,
             col_count: self.col_count,
+            row_count: self.row_count,
             d: self.d,
         }
     }
@@ -86,8 +86,8 @@ impl Game {
             map: vec![convert_row(&first_row)],
             x,
             y,
-            row_count: 1,
             col_count: first_row.len(),
+            row_count: 1,
             d: Directions::UP,
         }
     }
@@ -224,7 +224,7 @@ impl Game {
                 .join("");
             println!("{}", row_str);
         }
-        println!();
+        println!("- {},{}", self.x, self.y);
     }
 
     fn run_simulation(&mut self) -> SimulationResult {
@@ -241,16 +241,33 @@ impl Game {
         let mut result: usize = 0;
 
         // Brute force version
+        for col in 0..self.col_count as i32 {
+            for row in 0..self.row_count as i32 {
+                if col == self.x && row == self.y {
+                    continue;
+                }
+
+                let mut copy = self.clone();
+
+                if copy.is_empty(col, row) {
+                    copy.set_tile_at(col, row, Tile::Obstacle);
+
+                    if copy.run_simulation() == SimulationResult::CycleDetected {
+                        result += 1;
+                    }
+                }
+            }
+        }
 
         // Intelligent version
-        while self.guard_in_map() {
-            let mut copy = self.clone();
-            if copy.insert_obstacle() && (copy.run_simulation() == SimulationResult::CycleDetected)
-            {
-                result += 1;
-            }
-            self.tick();
-        }
+        // while self.guard_in_map() {
+        //     let mut copy = self.clone();
+        //     if copy.insert_obstacle() && (copy.run_simulation() == SimulationResult::CycleDetected)
+        //     {
+        //         result += 1;
+        //     }
+        //     self.tick();
+        // }
 
         result
     }
@@ -314,10 +331,11 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
     println!("Result = {}", result);
+    assert_eq!(5080, result);
     //endregion
 
     //region Part 2
-    println!("\n=== Part 2 ==="); // 1866 <-> 194.
+    println!("\n=== Part 2 ===");
 
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
         let mut lines = reader.lines().map_while(Result::ok);
@@ -336,6 +354,7 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part2(input_file)?);
     println!("Result = {}", result);
+    assert_eq!(1919, result);
     //endregion
 
     Ok(())
