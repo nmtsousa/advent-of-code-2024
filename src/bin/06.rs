@@ -33,11 +33,10 @@ bitflags! {
 
         const UP_DOWN = Self::UP.bits() | Self::DOWN.bits();
         const LEFT_RIGTH = Self::LEFT.bits() | Self::RIGHT.bits();
-
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum Tile {
     Empty,
     Obstacle,
@@ -56,6 +55,17 @@ struct Game {
     x: i32,
     y: i32,
     d: Directions,
+}
+
+impl Clone for Game {
+    fn clone(&self) -> Self {
+        Self {
+            map: self.map.iter().map(|row| row.to_vec()).collect(),
+            x: self.x,
+            y: self.y,
+            d: self.d,
+        }
+    }
 }
 
 impl Game {
@@ -97,7 +107,15 @@ impl Game {
     }
 
     fn is_obstacle(&self, x: i32, y: i32) -> bool {
-        self.in_map(x, y) && self.map[y as usize][x as usize] == Tile::Obstacle
+        self.in_map(x, y) && self.tile_is(x, y, Tile::Obstacle)
+    }
+
+    fn is_empty(&self, x: i32, y: i32) -> bool {
+        self.in_map(x, y) && self.tile_is(x, y, Tile::Empty)
+    }
+
+    fn tile_is(&self, x: i32, y: i32, tile: Tile) -> bool {
+        self.map[y as usize][x as usize] == tile
     }
 
     fn tick(&mut self) -> Option<SimulationResult> {
@@ -110,46 +128,44 @@ impl Game {
                     dirs: dirs | self.d,
                 }
             }
-            _ => self.map[self.y as usize][self.x as usize] = Tile::Visited { dirs: self.d },
+            Tile::Obstacle => {
+                self.dump_state();
+                panic!("Can't tick on an obstacle.");
+            }
+            Tile::Empty => {
+                self.map[self.y as usize][self.x as usize] = Tile::Visited { dirs: self.d }
+            }
+        }
+
+        while self.next_is_obstacle() {
+            match self.d {
+                Directions::UP => self.d = Directions::RIGHT,
+                Directions::RIGHT => self.d = Directions::DOWN,
+                Directions::DOWN => self.d = Directions::LEFT,
+                Directions::LEFT => self.d = Directions::UP,
+                _ => panic!("Unexpected current direction."),
+            }
         }
 
         match self.d {
-            Directions::UP => {
-                if self.is_obstacle(self.x, self.y - 1) {
-                    self.d = Directions::RIGHT;
-                    self.x += 1;
-                } else {
-                    self.y -= 1;
-                }
-            }
-            Directions::RIGHT => {
-                if self.is_obstacle(self.x + 1, self.y) {
-                    self.d = Directions::DOWN;
-                    self.y += 1;
-                } else {
-                    self.x += 1;
-                }
-            }
-            Directions::DOWN => {
-                if self.is_obstacle(self.x, self.y + 1) {
-                    self.d = Directions::LEFT;
-                    self.x -= 1;
-                } else {
-                    self.y += 1;
-                }
-            }
-            Directions::LEFT => {
-                if self.is_obstacle(self.x - 1, self.y) {
-                    self.d = Directions::UP;
-                    self.y -= 1;
-                } else {
-                    self.x -= 1;
-                }
-            }
+            Directions::UP => self.y -= 1,
+            Directions::RIGHT => self.x += 1,
+            Directions::DOWN => self.y += 1,
+            Directions::LEFT => self.x -= 1,
             _ => panic!("Unexpected current direction."),
         };
 
         None
+    }
+
+    fn next_is_obstacle(&self) -> bool {
+        match self.d {
+            Directions::UP => self.is_obstacle(self.x, self.y - 1),
+            Directions::RIGHT => self.is_obstacle(self.x + 1, self.y),
+            Directions::DOWN => self.is_obstacle(self.x, self.y + 1),
+            Directions::LEFT => self.is_obstacle(self.x - 1, self.y),
+            _ => panic!("Unexpected current direction."),
+        }
     }
 
     fn count_visited(&self) -> usize {
@@ -201,6 +217,53 @@ impl Game {
 
         SimulationResult::GuardExited
     }
+
+    fn count_obstacles_that_produce_cycles(&mut self) -> usize {
+        let mut result: usize = 0;
+
+        while self.guard_in_map() {
+            let mut copy = self.clone();
+            if copy.insert_obstacle() && (copy.run_simulation() == SimulationResult::CycleDetected)
+            {
+                result += 1;
+            }
+            self.tick();
+        }
+        result
+    }
+
+    fn insert_obstacle(&mut self) -> bool {
+        let obs_x;
+        let obs_y;
+
+        match self.d {
+            Directions::UP => {
+                obs_x = self.x;
+                obs_y = self.y - 1;
+            }
+            Directions::RIGHT => {
+                obs_x = self.x + 1;
+                obs_y = self.y;
+            }
+            Directions::DOWN => {
+                obs_x = self.x;
+                obs_y = self.y + 1;
+            }
+            Directions::LEFT => {
+                obs_x = self.x - 1;
+                obs_y = self.y;
+            }
+            _ => panic!("Unexpected current direction."),
+        };
+
+        if self.is_empty(obs_x, obs_y) {
+            self.map[obs_y as usize][obs_x as usize] = Tile::Obstacle;
+
+            return true;
+        }
+
+        false
+    }
 }
 
 fn convert_row(row: &str) -> Vec<Tile> {
@@ -209,7 +272,7 @@ fn convert_row(row: &str) -> Vec<Tile> {
         .map(|c| match c {
             '.' => Tile::Empty,
             '#' => Tile::Obstacle,
-            '^' => Tile::Obstacle,
+            '^' => Tile::Empty,
             _ => panic!("Unexpected input!"),
         })
         .collect();
@@ -243,17 +306,25 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut lines = reader.lines().map_while(Result::ok);
+        let first_row = lines.next().unwrap();
+        let mut game = Game::new(first_row);
+
+        for line in lines {
+            game.push_row(line);
+        }
+
+        Ok(game.count_obstacles_that_produce_cycles())
+    }
+
+    assert_eq!(6, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
