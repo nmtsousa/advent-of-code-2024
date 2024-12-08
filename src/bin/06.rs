@@ -54,6 +54,8 @@ struct Game {
     map: Vec<Vec<Tile>>,
     x: i32,
     y: i32,
+    row_count: usize,
+    col_count: usize,
     d: Directions,
 }
 
@@ -63,6 +65,8 @@ impl Clone for Game {
             map: self.map.iter().map(|row| row.to_vec()).collect(),
             x: self.x,
             y: self.y,
+            row_count: self.row_count,
+            col_count: self.col_count,
             d: self.d,
         }
     }
@@ -82,6 +86,8 @@ impl Game {
             map: vec![convert_row(&first_row)],
             x,
             y,
+            row_count: 1,
+            col_count: first_row.len(),
             d: Directions::UP,
         }
     }
@@ -89,10 +95,11 @@ impl Game {
     fn push_row(&mut self, row: String) {
         if let Some(pos) = row.find("^") {
             self.x = pos as i32;
-            self.y = self.map.len() as i32;
+            self.y = self.row_count as i32;
         }
 
         self.map.push(convert_row(&row));
+        self.row_count += 1;
     }
 
     fn guard_in_map(&self) -> bool {
@@ -101,9 +108,9 @@ impl Game {
 
     fn in_map(&self, test_x: i32, test_y: i32) -> bool {
         test_y >= 0
-            && test_y < self.map[0].len() as i32
+            && test_y < self.row_count as i32
             && test_x >= 0
-            && test_x < self.map.len() as i32
+            && test_x < self.col_count as i32
     }
 
     fn is_obstacle(&self, x: i32, y: i32) -> bool {
@@ -233,6 +240,9 @@ impl Game {
     fn count_obstacles_that_produce_cycles(&mut self) -> usize {
         let mut result: usize = 0;
 
+        // Brute force version
+
+        // Intelligent version
         while self.guard_in_map() {
             let mut copy = self.clone();
             if copy.insert_obstacle() && (copy.run_simulation() == SimulationResult::CycleDetected)
@@ -241,6 +251,7 @@ impl Game {
             }
             self.tick();
         }
+
         result
     }
 
