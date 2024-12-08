@@ -36,7 +36,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Tile {
     Empty,
     Obstacle,
@@ -115,25 +115,37 @@ impl Game {
     }
 
     fn tile_is(&self, x: i32, y: i32, tile: Tile) -> bool {
-        self.map[y as usize][x as usize] == tile
+        self.tile_at(x, y) == tile
+    }
+
+    fn tile_at(&self, x: i32, y: i32) -> Tile {
+        self.map[y as usize][x as usize]
+    }
+
+    fn set_tile_at(&mut self, x: i32, y: i32, t: Tile) {
+        self.map[y as usize][x as usize] = t;
     }
 
     fn tick(&mut self) -> Option<SimulationResult> {
-        match self.map[self.y as usize][self.x as usize] {
+        match self.tile_at(self.x, self.y) {
             Tile::Visited { dirs } => {
                 if dirs.intersects(self.d) {
                     return Some(SimulationResult::CycleDetected);
                 }
-                self.map[self.y as usize][self.x as usize] = Tile::Visited {
-                    dirs: dirs | self.d,
-                }
+                self.set_tile_at(
+                    self.x,
+                    self.y,
+                    Tile::Visited {
+                        dirs: dirs | self.d,
+                    },
+                );
             }
             Tile::Obstacle => {
                 self.dump_state();
                 panic!("Can't tick on an obstacle.");
             }
             Tile::Empty => {
-                self.map[self.y as usize][self.x as usize] = Tile::Visited { dirs: self.d }
+                self.set_tile_at(self.x, self.y, Tile::Visited { dirs: self.d });
             }
         }
 
@@ -248,7 +260,7 @@ impl Game {
             return false;
         }
 
-        self.map[obs_y as usize][obs_x as usize] = Tile::Obstacle;
+        self.set_tile_at(obs_x, obs_y, Tile::Obstacle);
 
         true
     }
