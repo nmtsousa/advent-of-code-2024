@@ -233,36 +233,24 @@ impl Game {
     }
 
     fn insert_obstacle(&mut self) -> bool {
-        let obs_x;
-        let obs_y;
+        let mut obs_x = self.x;
+        let mut obs_y = self.y;
 
         match self.d {
-            Directions::UP => {
-                obs_x = self.x;
-                obs_y = self.y - 1;
-            }
-            Directions::RIGHT => {
-                obs_x = self.x + 1;
-                obs_y = self.y;
-            }
-            Directions::DOWN => {
-                obs_x = self.x;
-                obs_y = self.y + 1;
-            }
-            Directions::LEFT => {
-                obs_x = self.x - 1;
-                obs_y = self.y;
-            }
+            Directions::UP => obs_y -= 1,
+            Directions::RIGHT => obs_x += 1,
+            Directions::DOWN => obs_y += 1,
+            Directions::LEFT => obs_x -= 1,
             _ => panic!("Unexpected current direction."),
         };
 
-        if self.is_empty(obs_x, obs_y) {
-            self.map[obs_y as usize][obs_x as usize] = Tile::Obstacle;
-
-            return true;
+        if !self.is_empty(obs_x, obs_y) {
+            return false;
         }
 
-        false
+        self.map[obs_y as usize][obs_x as usize] = Tile::Obstacle;
+
+        true
     }
 }
 
@@ -306,7 +294,7 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    println!("\n=== Part 2 ===");
+    println!("\n=== Part 2 ==="); // 1866 <-> 194.
 
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
         let mut lines = reader.lines().map_while(Result::ok);
