@@ -71,16 +71,27 @@ impl Map {
         self.add_antinode_at(row_1 as i32 - row_diff, col_1 as i32 - col_diff);
         self.add_antinode_at(row_2 as i32 + row_diff, col_2 as i32 + col_diff);
     }
-    fn add_antinode_at(&mut self, row: i32, col: i32) {
+
+    fn add_antinode_at(&mut self, row: i32, col: i32) -> bool {
         if row < 0 || row as usize >= self.row_count {
-            return;
+            return false;
         }
 
         if col < 0 || col as usize >= self.col_count {
-            return;
+            return false;
         }
 
         self.antinode[row as usize][col as usize] = '#';
+
+        true
+    }
+
+    fn add_antinodes_2(&mut self, row_1: usize, col_1: usize, row_2: usize, col_2: usize) {
+        let row_diff: i32 = row_2 as i32 - row_1 as i32;
+        let col_diff: i32 = col_2 as i32 - col_1 as i32;
+
+        self.add_antinodes_2_steps(row_1 as i32, col_1 as i32, -row_diff, -col_diff);
+        self.add_antinodes_2_steps(row_2 as i32, col_2 as i32, row_diff, col_diff);
     }
 
     fn dump_state(&self) {
@@ -88,6 +99,15 @@ impl Map {
             println!("{}", row.iter().collect::<String>());
         });
         println!()
+    }
+
+    fn add_antinodes_2_steps(&mut self, row: i32, col: i32, row_diff: i32, col_diff: i32) {
+        let mut r = row - row_diff;
+        let mut c = col - col_diff;
+        while self.add_antinode_at(r, c) {
+            r -= row_diff;
+            c -= col_diff;
+        }
     }
 }
 
@@ -147,17 +167,55 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        // Read map
+        let mut lines = reader.lines().map_while(Result::ok);
+        let first_row = lines.next().unwrap();
+        let mut map = Map::new(first_row);
+
+        for line in lines {
+            map.push_row(line);
+        }
+
+        // for the whole map
+        for row in 0..map.row_count {
+            for col in 0..map.col_count {
+                // find antenna symbol (ignore "." and "#")
+                match map.value_at(row, col) {
+                    '.' => continue,
+                    '#' => continue,
+                    antenna => {
+                        // For reminder of map
+                        //  Find same antenna symbol
+                        for c in col + 1..map.col_count {
+                            if antenna == map.value_at(row, c) {
+                                map.add_antinodes_2(row, col, row, c);
+                            }
+                        }
+                        for r in row + 1..map.row_count {
+                            for c in 0..map.col_count {
+                                if antenna == map.value_at(r, c) {
+                                    map.add_antinodes_2(row, col, r, c);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Count antinodes
+        let count = map.count_antinodes();
+        Ok(count)
+    }
+
+    assert_eq!(34, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
