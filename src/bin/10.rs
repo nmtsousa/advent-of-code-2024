@@ -50,14 +50,32 @@ impl Map {
                 if self.map[row][col] == 0 {
                     let mut found_endings: Vec<Vec<bool>> =
                         vec![vec![false; self.col_count]; self.row_count];
-                    let trail_score = self.trailhead_score_from(row, col, &mut found_endings);
-                    score += trail_score;
+                    self.trailhead_score_from(row, col, &mut found_endings);
+                    score += found_endings
+                        .iter()
+                        .flatten()
+                        .map(|v| if *v { 1 } else { 0 })
+                        .sum::<usize>();
+                }
+            }
+        }
+
+        score
+    }
+
+    fn sum_trailhead_ratings(&self) -> usize {
+        let mut score = 0;
+        for row in 0..self.row_count {
+            for col in 0..self.col_count {
+                if self.map[row][col] == 0 {
+                    let mut found_endings: Vec<Vec<bool>> =
+                        vec![vec![false; self.col_count]; self.row_count];
+                    score += self.trailhead_score_from(row, col, &mut found_endings);
                 }
             }
         }
         score
     }
-
     fn trailhead_score_from(
         &self,
         row: usize,
@@ -66,10 +84,6 @@ impl Map {
     ) -> usize {
         let current_height = self.map[row][col];
         if current_height == 9 {
-            if found_endings[row][col] {
-                return 0;
-            }
-
             found_endings[row][col] = true;
             return 1;
         }
@@ -125,17 +139,27 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut map = Map::new();
+        for line in reader.lines().map_while(Result::ok) {
+            map.add_row(
+                line.chars()
+                    .map(|c| c.to_digit(10).expect("Digit from 0 to 9") as u8)
+                    .collect(),
+            );
+        }
+
+        let result = map.sum_trailhead_ratings();
+        Ok(result)
+    }
+
+    assert_eq!(81, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
