@@ -448,20 +448,20 @@ impl WharehouseWide {
                 if self.attemp_down(target_x, target_y + 1)
                     && self.attemp_down(target_x + 1, target_y + 1) =>
             {
-                self.map[target_y + 1][target_x] = TileWide::BoxLeft;
                 self.map[target_y][target_x] = TileWide::Free;
-                self.map[target_y + 1][target_x + 1] = TileWide::BoxRight;
                 self.map[target_y][target_x + 1] = TileWide::Free;
+                self.map[target_y + 1][target_x] = TileWide::BoxLeft;
+                self.map[target_y + 1][target_x + 1] = TileWide::BoxRight;
                 true
             }
             TileWide::BoxRight
                 if self.attemp_down(target_x, target_y + 1)
                     && self.attemp_down(target_x - 1, target_y + 1) =>
             {
-                self.map[target_y + 1][target_x] = TileWide::BoxRight;
                 self.map[target_y][target_x] = TileWide::Free;
-                self.map[target_y + 1][target_x - 1] = TileWide::BoxLeft;
                 self.map[target_y][target_x - 1] = TileWide::Free;
+                self.map[target_y + 1][target_x] = TileWide::BoxRight;
+                self.map[target_y + 1][target_x - 1] = TileWide::BoxLeft;
                 true
             }
             _ => false,
