@@ -117,7 +117,6 @@ impl Wharehouse {
         let mut robot_x = None;
         let mut robot_y = None;
 
-        let mut x: usize = 0;
         for (y, line) in lines.by_ref().enumerate() {
             if line.is_empty() {
                 break;
@@ -139,7 +138,6 @@ impl Wharehouse {
                     })
                     .collect(),
             );
-            x = 0;
         }
 
         Self {
