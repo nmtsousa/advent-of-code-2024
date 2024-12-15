@@ -56,7 +56,7 @@ fn main() -> Result<()> {
                 let target_x = captures[1].parse::<usize>().expect("Number for X");
                 let target_y = captures[2].parse::<usize>().expect("Number for Y");
 
-                result += compute_coins(target_x, target_y, a_x, a_y, b_x, b_y);
+                result += compute_coins_part1(target_x, target_y, a_x, a_y, b_x, b_y);
             }
         }
 
@@ -71,23 +71,49 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut result: usize = 0;
+
+        let mut input = reader.lines().map_while(Result::ok);
+        while let Some(line) = input.next() {
+            if line.starts_with("Button A") {
+                let mut re = Regex::new(r"^Button A\: X\+([0-9]+), Y\+([0-9]+)$")?;
+                let mut captures = re.captures(&line).expect("Button A captured.");
+                let a_x = captures[1].parse::<isize>().expect("Number for X");
+                let a_y = captures[2].parse::<isize>().expect("Number for Y");
+
+                let line = input.next().expect("Line for B");
+                re = Regex::new(r"^Button B\: X\+([0-9]+), Y\+([0-9]+)$")?;
+                captures = re.captures(&line).expect("Button B captured.");
+                let b_x = captures[1].parse::<isize>().expect("Number for X");
+                let b_y = captures[2].parse::<isize>().expect("Number for Y");
+
+                let line = input.next().expect("Line for Prize");
+                re = Regex::new(r"^Prize\: X=([0-9]+), Y=([0-9]+)$")?;
+                captures = re.captures(&line).expect("Prize captured.");
+                let target_x = captures[1].parse::<isize>().expect("Number for X") + 10000000000000;
+                let target_y = captures[2].parse::<isize>().expect("Number for Y") + 10000000000000;
+
+                result += compute_coins_part2(a_x, a_y, b_x, b_y, target_x, target_y);
+            }
+        }
+
+        Ok(result)
+    }
+
+    assert_eq!(875318608908, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
 }
 
-fn compute_coins(
+fn compute_coins_part1(
     target_x: usize,
     target_y: usize,
     a_x: usize,
@@ -109,4 +135,22 @@ fn compute_coins(
     }
 
     0
+}
+
+fn compute_coins_part2(
+    a_x: isize,
+    a_y: isize,
+    b_x: isize,
+    b_y: isize,
+    prize_x: isize,
+    prize_y: isize,
+) -> usize {
+    let det = a_x * b_y - a_y * b_x;
+    let a = (prize_x * b_y - prize_y * b_x) / det;
+    let b = (a_x * prize_y - a_y * prize_x) / det;
+    if (a_x * a + b_x * b, a_y * a + b_y * b) == (prize_x, prize_y) {
+        (a * 3 + b) as usize
+    } else {
+        0
+    }
 }
