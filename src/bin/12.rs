@@ -2,7 +2,6 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -149,7 +148,7 @@ impl Garden {
 
         let mut result: usize = 0;
         for (key, area) in self.area_map.iter() {
-            let perimeter = self.perimeter_map.get(&key).expect("Area has perimter");
+            let perimeter = self.perimeter_map.get(key).expect("Area has perimter");
             result += *area * *perimeter;
         }
 
@@ -276,9 +275,7 @@ impl Garden {
             }
         }
 
-        let count = self.compute_sides(horizontal_sides) + self.compute_sides(vertical_sides);
-
-        count
+        self.compute_sides(horizontal_sides) + self.compute_sides(vertical_sides)
     }
 
     fn compute_sides(&self, wall_map: HashMap<usize, Vec<Wall>>) -> usize {
