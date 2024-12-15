@@ -61,17 +61,41 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(width: i16, height: i16, reader: R) -> Result<usize> {
+        let mut bathroom = Bathroom::new(width, height);
+
+        let re = Regex::new(r"^p=(-?[0-9]+),(-?[0-9]+) v=(-?[0-9]+),(-?[0-9]+)$")?;
+
+        reader.lines().map_while(Result::ok).for_each(|l| {
+            let captures = re.captures(&l).expect("Button A captured.");
+
+            let p_x = captures[1].parse::<i16>().expect("Number for X");
+            let p_y = captures[2].parse::<i16>().expect("Number for Y");
+
+            let v_x = captures[3].parse::<i16>().expect("Number for X");
+            let v_y = captures[4].parse::<i16>().expect("Number for Y");
+
+            bathroom.add_robot(p_x, p_y, v_x, v_y);
+        });
+
+        let mut tick_count = 0;
+        while !bathroom.is_easter_egg() {
+            tick_count += 1;
+            bathroom.tick(1);
+        }
+
+        bathroom.map_dump();
+
+        Ok(tick_count)
+    }
+
+    //assert_eq!(0, part2(11, 7, BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(101, 103, input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
@@ -142,6 +166,39 @@ impl Bathroom {
         }
 
         q1 * q2 * q3 * q4
+    }
+
+    fn map_dump(&self) {
+        self.robots_to_map().iter().for_each(|row| {
+            println!("{}", row.iter().collect::<String>());
+        });
+        println!();
+    }
+
+    fn robots_to_map(&self) -> Vec<Vec<char>> {
+        let mut map = vec![vec![' '; self.width as usize]; self.height as usize];
+
+        for robot in self.robots.iter() {
+            let x = robot.p_x as usize;
+            let y = robot.p_y as usize;
+            if map[y][x] == 'x' {
+                map[y][x] = 'C';
+            } else {
+                map[y][x] = 'x';
+            }
+        }
+        map
+    }
+
+    fn is_easter_egg(&self) -> bool {
+        let rows = self.robots_to_map();
+        for row in rows {
+            let row_str = row.iter().collect::<String>();
+            if row_str.contains("xxxxxxxxxxxxxxx") {
+                return true;
+            }
+        }
+        false
     }
 }
 
