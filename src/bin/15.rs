@@ -359,16 +359,16 @@ impl WharehouseWide {
     }
 
     fn move_left(&mut self) {
-        if self.attemp_left(self.robot_x - 1, self.robot_y) {
+        if self.attemp_left(self.robot_y, self.robot_x - 1) {
             self.robot_x -= 1;
         }
     }
 
-    fn attemp_left(&mut self, target_x: usize, target_y: usize) -> bool {
-        match self.get_at(target_x, target_y) {
+    fn attemp_left(&mut self, target_y: usize, target_x: usize) -> bool {
+        match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
-            t if self.attemp_left(target_x - 1, target_y) => {
+            t if self.attemp_left(target_y, target_x - 1) => {
                 self.map[target_y][target_x - 1] = t;
                 self.map[target_y][target_x] = TileWide::Free;
                 true
@@ -377,21 +377,21 @@ impl WharehouseWide {
         }
     }
 
-    fn get_at(&self, target_x: usize, target_y: usize) -> TileWide {
+    fn get_at(&self, target_y: usize, target_x: usize) -> TileWide {
         self.map[target_y][target_x]
     }
 
     fn move_right(&mut self) {
-        if self.attemp_right(self.robot_x + 1, self.robot_y) {
+        if self.attemp_right(self.robot_y, self.robot_x + 1) {
             self.robot_x += 1;
         }
     }
 
-    fn attemp_right(&mut self, target_x: usize, target_y: usize) -> bool {
-        match self.get_at(target_x, target_y) {
+    fn attemp_right(&mut self, target_y: usize, target_x: usize) -> bool {
+        match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
-            t if self.attemp_right(target_x + 1, target_y) => {
+            t if self.attemp_right(target_y, target_x + 1) => {
                 self.map[target_y][target_x + 1] = t;
                 self.map[target_y][target_x] = TileWide::Free;
                 true
@@ -401,18 +401,18 @@ impl WharehouseWide {
     }
 
     fn move_up(&mut self) {
-        if self.attemp_up(self.robot_x, self.robot_y - 1) {
+        if self.attemp_up(self.robot_y - 1, self.robot_x) {
             self.robot_y -= 1;
         }
     }
 
-    fn attemp_up(&mut self, target_x: usize, target_y: usize) -> bool {
-        match self.get_at(target_x, target_y) {
+    fn attemp_up(&mut self, target_y: usize, target_x: usize) -> bool {
+        match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
             TileWide::BoxLeft
-                if self.attemp_up(target_x, target_y - 1)
-                    && self.attemp_up(target_x + 1, target_y - 1) =>
+                if self.attemp_up(target_y - 1, target_x)
+                    && self.attemp_up(target_y - 1, target_x + 1) =>
             {
                 self.map[target_y - 1][target_x] = TileWide::BoxLeft;
                 self.map[target_y - 1][target_x + 1] = TileWide::BoxRight;
@@ -421,8 +421,8 @@ impl WharehouseWide {
                 true
             }
             TileWide::BoxRight
-                if self.attemp_up(target_x, target_y - 1)
-                    && self.attemp_up(target_x - 1, target_y - 1) =>
+                if self.attemp_up(target_y - 1, target_x)
+                    && self.attemp_up(target_y - 1, target_x - 1) =>
             {
                 self.map[target_y - 1][target_x - 1] = TileWide::BoxLeft;
                 self.map[target_y - 1][target_x] = TileWide::BoxRight;
@@ -441,7 +441,7 @@ impl WharehouseWide {
     }
 
     fn attemp_down(&mut self, target_x: usize, target_y: usize) -> bool {
-        match self.get_at(target_x, target_y) {
+        match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
             TileWide::BoxLeft
