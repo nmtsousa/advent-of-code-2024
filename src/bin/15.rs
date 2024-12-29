@@ -401,70 +401,90 @@ impl WharehouseWide {
     }
 
     fn move_up(&mut self) {
-        if self.attemp_up(self.robot_y - 1, self.robot_x) {
+        if self.can_move_up(self.robot_y - 1, self.robot_x) {
+            self.do_move_up(self.robot_y - 1, self.robot_x);
             self.robot_y -= 1;
         }
     }
 
-    fn attemp_up(&mut self, target_y: usize, target_x: usize) -> bool {
+    fn can_move_up(&self, target_y: usize, target_x: usize) -> bool {
         match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
-            TileWide::BoxLeft
-                if self.attemp_up(target_y - 1, target_x)
-                    && self.attemp_up(target_y - 1, target_x + 1) =>
-            {
+            TileWide::BoxLeft => {
+                self.can_move_up(target_y - 1, target_x)
+                    && self.can_move_up(target_y - 1, target_x + 1)
+            }
+            TileWide::BoxRight => {
+                self.can_move_up(target_y - 1, target_x)
+                    && self.can_move_up(target_y - 1, target_x - 1)
+            }
+        }
+    }
+
+    fn do_move_up(&mut self, target_y: usize, target_x: usize) {
+        match self.get_at(target_y, target_x) {
+            TileWide::BoxLeft => {
+                self.do_move_up(target_y - 1, target_x);
+                self.do_move_up(target_y - 1, target_x + 1);
                 self.map[target_y - 1][target_x] = TileWide::BoxLeft;
                 self.map[target_y - 1][target_x + 1] = TileWide::BoxRight;
                 self.map[target_y][target_x] = TileWide::Free;
                 self.map[target_y][target_x + 1] = TileWide::Free;
-                true
             }
-            TileWide::BoxRight
-                if self.attemp_up(target_y - 1, target_x)
-                    && self.attemp_up(target_y - 1, target_x - 1) =>
-            {
+            TileWide::BoxRight => {
+                self.do_move_up(target_y - 1, target_x);
+                self.do_move_up(target_y - 1, target_x - 1);
                 self.map[target_y - 1][target_x - 1] = TileWide::BoxLeft;
                 self.map[target_y - 1][target_x] = TileWide::BoxRight;
                 self.map[target_y][target_x] = TileWide::Free;
                 self.map[target_y][target_x - 1] = TileWide::Free;
-                true
             }
-            _ => false,
+            _ => (),
         }
     }
 
     fn move_down(&mut self) {
-        if self.attemp_down(self.robot_x, self.robot_y + 1) {
+        if self.can_move_down(self.robot_y + 1, self.robot_x) {
+            self.do_move_down(self.robot_y + 1, self.robot_x);
             self.robot_y += 1;
         }
     }
 
-    fn attemp_down(&mut self, target_x: usize, target_y: usize) -> bool {
+    fn can_move_down(&self, target_y: usize, target_x: usize) -> bool {
         match self.get_at(target_y, target_x) {
             TileWide::Free => true,
             TileWide::Wall => false,
-            TileWide::BoxLeft
-                if self.attemp_down(target_x, target_y + 1)
-                    && self.attemp_down(target_x + 1, target_y + 1) =>
-            {
+            TileWide::BoxLeft => {
+                self.can_move_down(target_y + 1, target_x)
+                    && self.can_move_down(target_y + 1, target_x + 1)
+            }
+            TileWide::BoxRight => {
+                self.can_move_down(target_y + 1, target_x)
+                    && self.can_move_down(target_y + 1, target_x - 1)
+            }
+        }
+    }
+
+    fn do_move_down(&mut self, target_y: usize, target_x: usize) {
+        match self.get_at(target_y, target_x) {
+            TileWide::BoxLeft => {
+                self.do_move_down(target_y + 1, target_x);
+                self.do_move_down(target_y + 1, target_x + 1);
                 self.map[target_y][target_x] = TileWide::Free;
                 self.map[target_y][target_x + 1] = TileWide::Free;
                 self.map[target_y + 1][target_x] = TileWide::BoxLeft;
                 self.map[target_y + 1][target_x + 1] = TileWide::BoxRight;
-                true
             }
-            TileWide::BoxRight
-                if self.attemp_down(target_x, target_y + 1)
-                    && self.attemp_down(target_x - 1, target_y + 1) =>
-            {
+            TileWide::BoxRight => {
+                self.do_move_down(target_y + 1, target_x);
+                self.do_move_down(target_y + 1, target_x - 1);
                 self.map[target_y][target_x] = TileWide::Free;
                 self.map[target_y][target_x - 1] = TileWide::Free;
                 self.map[target_y + 1][target_x] = TileWide::BoxRight;
                 self.map[target_y + 1][target_x - 1] = TileWide::BoxLeft;
-                true
             }
-            _ => false,
+            _ => (),
         }
     }
 
