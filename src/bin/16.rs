@@ -65,6 +65,7 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
     println!("Result = {}", result);
+    assert_eq!(95476, result);
     //endregion
 
     //region Part 2
