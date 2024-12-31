@@ -49,38 +49,30 @@ const TEST_2: &str = "\
 fn main() -> Result<()> {
     start_day(DAY);
 
-    //region Part 1
-    println!("=== Part 1 ===");
-
-    fn part1<R: BufRead>(reader: R) -> Result<usize> {
+    fn part1<R: BufRead>(reader: R) -> Result<Puzzle> {
         let mut lines = reader.lines().map_while(Result::ok);
         let mut puzzle = Puzzle::new(&mut lines);
-        let result = puzzle.solve();
-        Ok(result)
+        puzzle.solve();
+
+        Ok(puzzle)
     }
 
-    assert_eq!(7036, part1(BufReader::new(TEST_1.as_bytes()))?);
-    assert_eq!(11048, part1(BufReader::new(TEST_2.as_bytes()))?);
+    let test1_result = part1(BufReader::new(TEST_1.as_bytes()))?;
+    assert_eq!(7036, test1_result.get_lower_cost());
+    assert_eq!(45, test1_result.count_tiles_in_best_paths());
+
+    let test2_result = part1(BufReader::new(TEST_2.as_bytes()))?;
+    assert_eq!(11048, test2_result.get_lower_cost());
+    assert_eq!(64, test2_result.count_tiles_in_best_paths());
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    let result = time_snippet!(part1(input_file)?);
-    println!("Result = {}", result);
-    assert_eq!(95476, result);
-    //endregion
+    let puzzle_result = time_snippet!(part1(input_file)?);
 
-    //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
-    //endregion
+    println!("=== Part 1 ===");
+    println!("Result = {}", puzzle_result.get_lower_cost());
+    assert_eq!(95476, puzzle_result.get_lower_cost());
+
+    println!("\n=== Part 2 ===");
 
     Ok(())
 }
@@ -99,6 +91,7 @@ struct Puzzle {
     start_x: usize,
     start_y: usize,
     lowest_cost: Option<usize>,
+    best_path_tile: Vec<Vec<bool>>,
 }
 
 #[derive(Debug)]
@@ -252,7 +245,7 @@ impl State {
 
 impl Puzzle {
     fn new(lines: &mut impl Iterator<Item = String>) -> Self {
-        let mut map = vec![];
+        let mut map: Vec<Vec<Tile>> = vec![];
         let mut start_x = None;
         let mut start_y = None;
 
@@ -278,11 +271,15 @@ impl Puzzle {
             );
         }
 
+        let row_count = map.len();
+        let col_count = map[0].len();
+
         Self {
             map,
             start_x: start_x.expect("Start X was found."),
             start_y: start_y.expect("Start Y was found."),
             lowest_cost: None,
+            best_path_tile: vec![vec![false; col_count]; row_count],
         }
     }
 
@@ -305,34 +302,111 @@ impl Puzzle {
         });
     }
 
-    fn solve(&mut self) -> usize {
-        // Start has a cost of 0
-
+    fn solve(&mut self) {
         let start = State::new_start(self.start_x, self.start_y);
-        self.solve_for(start);
+        let mut path = vec![];
+        self.solve_for(start, &mut path);
+    }
 
+    fn get_lower_cost(&self) -> usize {
         self.lowest_cost.expect("Found lowest cost path.")
     }
 
-    fn solve_for(&mut self, state: State) {
+    fn count_tiles_in_best_paths(&self) -> usize {
+        self.dump_best_paths();
+
+        let mut count = 0;
+        self.best_path_tile.iter().for_each(|row| {
+            row.iter().for_each(|v| {
+                if *v {
+                    count += 1;
+                }
+            });
+        });
+        count
+    }
+
+    fn solve_for(&mut self, state: State, path: &mut Vec<(usize, usize)>) {
+        path.push((state.x, state.y));
         match self.map[state.y][state.x] {
-            Tile::Wall => return,
             Tile::Free => self.map[state.y][state.x] = Tile::Cost(state.cost),
             Tile::Start => (),
             Tile::Cost(x) if state.cost < x => self.map[state.y][state.x] = Tile::Cost(state.cost),
-            Tile::Cost(_) => return,
+            Tile::Cost(_) => {
+                path.pop();
+                return;
+            }
+            Tile::Wall => {
+                path.pop();
+                return;
+            }
             Tile::End => {
+                println!("End found cost {} , len {}", state.cost, path.len());
                 match self.lowest_cost {
-                    None => self.lowest_cost = Some(state.cost),
-                    Some(x) if x > state.cost => self.lowest_cost = Some(state.cost),
+                    None => {
+                        println!("First path found cost {}, len {}", state.cost, path.len());
+                        self.lowest_cost = Some(state.cost);
+                        self.mark_best_path(path);
+                    }
+                    Some(x) if x > state.cost => {
+                        self.reset_best_path();
+                        println!("Path found {}, len {}", state.cost, path.len());
+                        self.mark_best_path(path);
+                        self.lowest_cost = Some(state.cost);
+                    }
+                    Some(x) if x == state.cost => {
+                        println!("Secondary path found {}, len {}", state.cost, path.len());
+                        self.mark_best_path(path);
+                    }
                     _ => (),
                 };
+                path.pop();
+                return;
             }
         };
 
-        self.solve_for(state.move_forward());
-        self.solve_for(state.turn_left());
-        self.solve_for(state.turn_right());
-        self.solve_for(state.u_turn());
+        self.solve_for(state.move_forward(), path);
+        self.solve_for(state.turn_left(), path);
+        self.solve_for(state.turn_right(), path);
+        self.solve_for(state.u_turn(), path);
+        path.pop();
+    }
+
+    fn reset_best_path(&mut self) {
+        self.best_path_tile.iter_mut().for_each(|row| {
+            row.iter_mut().for_each(|v| {
+                *v = false;
+            });
+        });
+    }
+
+    fn mark_best_path(&mut self, path: &[(usize, usize)]) {
+        for (x, y) in path {
+            self.best_path_tile[*y][*x] = true;
+        }
+    }
+
+    fn dump_best_paths(&self) {
+        self.map.iter().enumerate().for_each(|(row, r)| {
+            println!(
+                "{}",
+                r.iter()
+                    .enumerate()
+                    .map(|(col, t)| {
+                        if self.best_path_tile[row][col] {
+                            'O'
+                        } else {
+                            match t {
+                                Tile::Wall => '#',
+                                Tile::Free => '.',
+                                Tile::Start => 'S',
+                                Tile::End => 'E',
+                                Tile::Cost(_) => '+',
+                            }
+                        }
+                    })
+                    .collect::<String>()
+            );
+        });
     }
 }
