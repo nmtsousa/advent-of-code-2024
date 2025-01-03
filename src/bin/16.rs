@@ -57,13 +57,17 @@ fn main() -> Result<()> {
         Ok(puzzle)
     }
 
-    let test1_result = part1(BufReader::new(TEST_1.as_bytes()))?;
+    println!("=== Test 1 ===");
+    let test1_result = time_snippet!(part1(BufReader::new(TEST_1.as_bytes()))?);
     assert_eq!(7036, test1_result.get_lower_cost());
     assert_eq!(45, test1_result.count_tiles_in_best_paths());
 
-    let test2_result = part1(BufReader::new(TEST_2.as_bytes()))?;
+    println!("=== Test 2 ===");
+    let test2_result = time_snippet!(part1(BufReader::new(TEST_2.as_bytes()))?);
     assert_eq!(11048, test2_result.get_lower_cost());
     assert_eq!(64, test2_result.count_tiles_in_best_paths());
+
+    println!("=== Puzzle ===");
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let puzzle_result = time_snippet!(part1(input_file)?);
@@ -79,19 +83,20 @@ fn main() -> Result<()> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tile {
-    Wall,        // #
-    Free,        // .
-    Start,       // S
-    End,         // E
-    Cost(usize), // Cost to reach tile
+    Wall,  // #
+    Free,  // .
+    Start, // S
+    End,   // E
 }
 
 struct Puzzle {
     map: Vec<Vec<Tile>>,
+    row_count: usize,
+    col_count: usize,
+    best_path_tile: Vec<Vec<bool>>,
     start_x: usize,
     start_y: usize,
     lowest_cost: Option<usize>,
-    best_path_tile: Vec<Vec<bool>>,
 }
 
 #[derive(Debug)]
@@ -276,6 +281,8 @@ impl Puzzle {
 
         Self {
             map,
+            row_count,
+            col_count,
             start_x: start_x.expect("Start X was found."),
             start_y: start_y.expect("Start Y was found."),
             lowest_cost: None,
@@ -294,7 +301,6 @@ impl Puzzle {
                             Tile::Free => '.',
                             Tile::Start => 'S',
                             Tile::End => 'E',
-                            Tile::Cost(_) => '+',
                         }
                     })
                     .collect::<String>()
@@ -304,8 +310,8 @@ impl Puzzle {
 
     fn solve(&mut self) {
         let start = State::new_start(self.start_x, self.start_y);
-        let mut path = vec![];
-        self.solve_for(start, &mut path);
+        let mut tracker = PathTracker::new(self.row_count, self.row_count);
+        self.solve_for(start, &mut tracker);
     }
 
     fn get_lower_cost(&self) -> usize {
@@ -313,8 +319,6 @@ impl Puzzle {
     }
 
     fn count_tiles_in_best_paths(&self) -> usize {
-        self.dump_best_paths();
-
         let mut count = 0;
         self.best_path_tile.iter().for_each(|row| {
             row.iter().for_each(|v| {
@@ -326,50 +330,50 @@ impl Puzzle {
         count
     }
 
-    fn solve_for(&mut self, state: State, path: &mut Vec<(usize, usize)>) {
-        path.push((state.x, state.y));
-        match self.map[state.y][state.x] {
-            Tile::Free => self.map[state.y][state.x] = Tile::Cost(state.cost),
-            Tile::Start => (),
-            Tile::Cost(x) if state.cost < x => self.map[state.y][state.x] = Tile::Cost(state.cost),
-            Tile::Cost(_) => {
-                path.pop();
+    fn solve_for(&mut self, state: State, tracker: &mut PathTracker) {
+        if let Some(cost) = self.lowest_cost {
+            if cost < state.cost {
                 return;
             }
+        }
+
+        if !tracker.is_worh_continuing(&state) {
+            return;
+        }
+
+        tracker.push(&state);
+        match self.map[state.y][state.x] {
             Tile::Wall => {
-                path.pop();
+                tracker.pop();
                 return;
             }
             Tile::End => {
-                println!("End found cost {} , len {}", state.cost, path.len());
                 match self.lowest_cost {
                     None => {
-                        println!("First path found cost {}, len {}", state.cost, path.len());
                         self.lowest_cost = Some(state.cost);
-                        self.mark_best_path(path);
+                        self.mark_best_path(tracker);
                     }
                     Some(x) if x > state.cost => {
                         self.reset_best_path();
-                        println!("Path found {}, len {}", state.cost, path.len());
-                        self.mark_best_path(path);
+                        self.mark_best_path(tracker);
                         self.lowest_cost = Some(state.cost);
                     }
                     Some(x) if x == state.cost => {
-                        println!("Secondary path found {}, len {}", state.cost, path.len());
-                        self.mark_best_path(path);
+                        self.mark_best_path(tracker);
                     }
                     _ => (),
                 };
-                path.pop();
+                tracker.pop();
                 return;
             }
+            _ => {}
         };
 
-        self.solve_for(state.move_forward(), path);
-        self.solve_for(state.turn_left(), path);
-        self.solve_for(state.turn_right(), path);
-        self.solve_for(state.u_turn(), path);
-        path.pop();
+        self.solve_for(state.move_forward(), tracker);
+        self.solve_for(state.turn_left(), tracker);
+        self.solve_for(state.turn_right(), tracker);
+        self.solve_for(state.u_turn(), tracker);
+        tracker.pop();
     }
 
     fn reset_best_path(&mut self) {
@@ -380,8 +384,8 @@ impl Puzzle {
         });
     }
 
-    fn mark_best_path(&mut self, path: &[(usize, usize)]) {
-        for (x, y) in path {
+    fn mark_best_path(&mut self, tracker: &mut PathTracker) {
+        for (x, y) in tracker.path.iter() {
             self.best_path_tile[*y][*x] = true;
         }
     }
@@ -401,12 +405,39 @@ impl Puzzle {
                                 Tile::Free => '.',
                                 Tile::Start => 'S',
                                 Tile::End => 'E',
-                                Tile::Cost(_) => '+',
                             }
                         }
                     })
                     .collect::<String>()
             );
         });
+    }
+}
+
+struct PathTracker {
+    path: Vec<(usize, usize)>,
+    visited: Vec<Vec<bool>>,
+}
+
+impl PathTracker {
+    fn new(row_count: usize, col_count: usize) -> Self {
+        Self {
+            path: vec![],
+            visited: vec![vec![false; col_count]; row_count],
+        }
+    }
+
+    fn push(&mut self, state: &State) {
+        self.path.push((state.x, state.y));
+        self.visited[state.y][state.x] = true;
+    }
+
+    fn pop(&mut self) {
+        let removed = self.path.pop().expect("Point to pop is there.");
+        self.visited[removed.1][removed.0] = false;
+    }
+
+    fn is_worh_continuing(&self, state: &State) -> bool {
+        !self.visited[state.y][state.x]
     }
 }
