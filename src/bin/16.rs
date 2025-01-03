@@ -310,7 +310,7 @@ impl Puzzle {
 
     fn solve(&mut self) {
         let start = State::new_start(self.start_x, self.start_y);
-        let mut tracker = PathTracker::new(self.row_count, self.row_count);
+        let mut tracker = PathTracker::new(self.row_count, self.col_count);
         self.solve_for(start, &mut tracker);
     }
 
