@@ -2,6 +2,7 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -78,6 +79,9 @@ fn main() -> Result<()> {
 
     println!("\n=== Part 2 ===");
 
+    println!("Result = {}", puzzle_result.count_tiles_in_best_paths());
+    assert_eq!(511, puzzle_result.count_tiles_in_best_paths());
+
     Ok(())
 }
 
@@ -107,7 +111,7 @@ struct State {
     cost: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Direction {
     East,
     North,
@@ -158,91 +162,43 @@ impl State {
     }
 
     fn turn_left(&self) -> State {
-        let new_cost = self.cost + TURN_COST + FORWARD_COST;
-        match self.direction {
-            Direction::East => State {
-                x: self.x,
-                y: self.y + 1,
-                direction: Direction::South,
-                cost: new_cost,
-            },
-            Direction::North => State {
-                x: self.x - 1,
-                y: self.y,
-                direction: Direction::East,
-                cost: new_cost,
-            },
-            Direction::West => State {
-                x: self.x,
-                y: self.y - 1,
-                direction: Direction::North,
-                cost: new_cost,
-            },
-            Direction::South => State {
-                x: self.x + 1,
-                y: self.y,
-                direction: Direction::West,
-                cost: new_cost,
+        State {
+            x: self.x,
+            y: self.y,
+            cost: self.cost + TURN_COST,
+            direction: match self.direction {
+                Direction::East => Direction::South,
+                Direction::North => Direction::East,
+                Direction::West => Direction::North,
+                Direction::South => Direction::West,
             },
         }
     }
 
     fn turn_right(&self) -> State {
-        let new_cost = self.cost + TURN_COST + FORWARD_COST;
-        match self.direction {
-            Direction::East => State {
-                x: self.x,
-                y: self.y - 1,
-                direction: Direction::North,
-                cost: new_cost,
-            },
-            Direction::North => State {
-                x: self.x + 1,
-                y: self.y,
-                direction: Direction::West,
-                cost: new_cost,
-            },
-            Direction::West => State {
-                x: self.x,
-                y: self.y + 1,
-                direction: Direction::South,
-                cost: new_cost,
-            },
-            Direction::South => State {
-                x: self.x - 1,
-                y: self.y,
-                direction: Direction::East,
-                cost: new_cost,
+        State {
+            x: self.x,
+            y: self.y,
+            cost: self.cost + TURN_COST,
+            direction: match self.direction {
+                Direction::East => Direction::North,
+                Direction::North => Direction::West,
+                Direction::West => Direction::South,
+                Direction::South => Direction::East,
             },
         }
     }
 
     fn u_turn(&self) -> State {
-        let new_cost = self.cost + TURN_COST + FORWARD_COST;
-        match self.direction {
-            Direction::East => State {
-                x: self.x + 1,
-                y: self.y,
-                direction: Direction::West,
-                cost: new_cost,
-            },
-            Direction::North => State {
-                x: self.x,
-                y: self.y + 1,
-                direction: Direction::South,
-                cost: new_cost,
-            },
-            Direction::West => State {
-                x: self.x - 1,
-                y: self.y,
-                direction: Direction::East,
-                cost: new_cost,
-            },
-            Direction::South => State {
-                x: self.x,
-                y: self.y - 1,
-                direction: Direction::North,
-                cost: new_cost,
+        State {
+            x: self.x,
+            y: self.y,
+            cost: self.cost + 2 * TURN_COST,
+            direction: match self.direction {
+                Direction::East => Direction::West,
+                Direction::North => Direction::South,
+                Direction::West => Direction::East,
+                Direction::South => Direction::North,
             },
         }
     }
@@ -417,6 +373,7 @@ impl Puzzle {
 struct PathTracker {
     path: Vec<(usize, usize)>,
     visited: Vec<Vec<bool>>,
+    cost_per_direction: HashMap<(usize, usize), HashMap<Direction, usize>>,
 }
 
 impl PathTracker {
@@ -424,20 +381,39 @@ impl PathTracker {
         Self {
             path: vec![],
             visited: vec![vec![false; col_count]; row_count],
+            cost_per_direction: HashMap::new(),
         }
     }
 
     fn push(&mut self, state: &State) {
         self.path.push((state.x, state.y));
-        self.visited[state.y][state.x] = true;
+        //self.visited[state.y][state.x] = true;
+
+        self.cost_per_direction
+            .entry((state.x, state.y))
+            .or_insert(HashMap::new())
+            .entry(state.direction)
+            .and_modify(|c| {
+                if *c > state.cost {
+                    *c = state.cost;
+                }
+            })
+            .or_insert(state.cost);
     }
 
     fn pop(&mut self) {
         let removed = self.path.pop().expect("Point to pop is there.");
-        self.visited[removed.1][removed.0] = false;
+        //self.visited[removed.1][removed.0] = false;
     }
 
     fn is_worh_continuing(&self, state: &State) -> bool {
-        !self.visited[state.y][state.x]
+        //!self.visited[state.y][state.x]
+        match self.cost_per_direction.get(&(state.x, state.y)) {
+            None => true,
+            Some(map) => match map.get(&state.direction) {
+                None => true,
+                Some(c) => *c >= state.cost,
+            },
+        }
     }
 }
