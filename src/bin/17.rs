@@ -2,8 +2,10 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use itertools::Itertools;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::usize;
 
 const DAY: &str = "17";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
@@ -56,18 +58,55 @@ Register C: 0
 Program: 0,1,5,4,3,0
 ";
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Computer {
+    ins_ptr: usize,
     reg_a: usize,
     reg_b: usize,
     reg_c: usize,
+    program: Vec<u8>,
     outuput: Vec<u8>,
 }
 
 impl Computer {
+    fn new(lines: &mut impl Iterator<Item = String>) -> Self {
+        let reg_a = parse_reg(lines);
+        let reg_b = parse_reg(lines);
+        let reg_c = parse_reg(lines);
+
+        lines.next().expect("Empty line");
+
+        let program = lines
+            .next()
+            .expect("Program line")
+            .split(": ")
+            .collect_vec()[1]
+            .split(",")
+            .flat_map(|s| s.parse::<u8>())
+            .collect_vec();
+
+        Self {
+            ins_ptr: 0,
+            reg_a,
+            reg_b,
+            reg_c,
+            program,
+            outuput: vec![],
+        }
+    }
     fn get_output(&self) -> String {
         todo!("To implement");
     }
+
+    fn execute(&self) {
+        todo!("Execute program")
+    }
+}
+
+fn parse_reg(lines: &mut impl Iterator<Item = String>) -> usize {
+    lines.next().expect("Reg line").split(": ").collect_vec()[1]
+        .parse::<usize>()
+        .expect("I can parse the register.")
 }
 
 fn main() -> Result<()> {
@@ -77,9 +116,10 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<Computer> {
-        let comp = Computer::default();
+        let mut lines = reader.lines().map_while(Result::ok);
+        let comp = Computer::new(&mut lines);
+        comp.execute();
         // TODO: Solve Part 1 of the puzzle
-        let answer = reader.lines().flatten().count();
         Ok(comp)
     }
 
