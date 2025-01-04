@@ -99,7 +99,9 @@ impl Computer {
     }
 
     fn execute(&self) {
-        todo!("Execute program")
+        match self.program[self.ins_ptr] {
+            x => todo!("Opcode {} not implemented.", x),
+        }
     }
 }
 
