@@ -95,8 +95,6 @@ enum Tile {
 
 struct Puzzle {
     map: Vec<Vec<Tile>>,
-    row_count: usize,
-    col_count: usize,
     best_path_tile: Vec<Vec<bool>>,
     start_x: usize,
     start_y: usize,
@@ -237,8 +235,6 @@ impl Puzzle {
 
         Self {
             map,
-            row_count,
-            col_count,
             start_x: start_x.expect("Start X was found."),
             start_y: start_y.expect("Start Y was found."),
             lowest_cost: None,
@@ -266,7 +262,7 @@ impl Puzzle {
 
     fn solve(&mut self) {
         let start = State::new_start(self.start_x, self.start_y);
-        let mut tracker = PathTracker::new(self.row_count, self.col_count);
+        let mut tracker = PathTracker::new();
         self.solve_for(start, &mut tracker);
     }
 
@@ -372,22 +368,19 @@ impl Puzzle {
 
 struct PathTracker {
     path: Vec<(usize, usize)>,
-    visited: Vec<Vec<bool>>,
     cost_per_direction: HashMap<(usize, usize), HashMap<Direction, usize>>,
 }
 
 impl PathTracker {
-    fn new(row_count: usize, col_count: usize) -> Self {
+    fn new() -> Self {
         Self {
             path: vec![],
-            visited: vec![vec![false; col_count]; row_count],
             cost_per_direction: HashMap::new(),
         }
     }
 
     fn push(&mut self, state: &State) {
         self.path.push((state.x, state.y));
-        //self.visited[state.y][state.x] = true;
 
         self.cost_per_direction
             .entry((state.x, state.y))
@@ -402,8 +395,7 @@ impl PathTracker {
     }
 
     fn pop(&mut self) {
-        let removed = self.path.pop().expect("Point to pop is there.");
-        //self.visited[removed.1][removed.0] = false;
+        self.path.pop().expect("Point to pop is there.");
     }
 
     fn is_worh_continuing(&self, state: &State) -> bool {
