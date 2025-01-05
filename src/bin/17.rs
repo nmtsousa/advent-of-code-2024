@@ -133,6 +133,11 @@ impl Computer {
                     }
                 }
 
+                // bxc
+                4 => {
+                    self.reg_b = self.reg_b.bitxor(self.reg_c);
+                },
+
                 // out
                 5 => {
                     let combo = self.combo(operand);
