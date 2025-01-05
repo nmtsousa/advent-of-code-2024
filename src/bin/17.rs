@@ -5,6 +5,7 @@ use const_format::concatcp;
 use itertools::Itertools;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::BitXor;
 use std::usize;
 
 const DAY: &str = "17";
@@ -110,6 +111,11 @@ impl Computer {
                     let base: usize = 2;
                     let result = self.reg_a / base.pow(combo.try_into().unwrap());
                     self.reg_a = result;
+                }
+
+                // bxl
+                1 => {
+                    self.reg_b = self.reg_b.bitxor(operand as usize);
                 },
 
                 // bst
@@ -125,7 +131,7 @@ impl Computer {
                         self.ins_ptr = operand.into();
                         continue;
                     }
-                },
+                }
 
                 // out
                 5 => {
@@ -183,7 +189,7 @@ fn main() -> Result<()> {
         assert_eq!(0, test3.reg_a);
     }
 
-    assert_eq!(7, part1(BufReader::new(EXAMPLE_4.as_bytes()))?.reg_b);
+    assert_eq!(26, part1(BufReader::new(EXAMPLE_4.as_bytes()))?.reg_b);
 
     assert_eq!(44354, part1(BufReader::new(EXAMPLE_5.as_bytes()))?.reg_b);
 
