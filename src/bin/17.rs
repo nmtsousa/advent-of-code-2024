@@ -116,7 +116,7 @@ impl Computer {
                 // bxl
                 1 => {
                     self.reg_b = self.reg_b.bitxor(operand as usize);
-                },
+                }
 
                 // bst
                 2 => {
@@ -136,13 +136,29 @@ impl Computer {
                 // bxc
                 4 => {
                     self.reg_b = self.reg_b.bitxor(self.reg_c);
-                },
+                }
 
                 // out
                 5 => {
                     let combo = self.combo(operand);
                     let result = combo % 8;
                     self.output.push(result.try_into().unwrap());
+                }
+
+                // bdv
+                6 => {
+                    let combo = self.combo(operand);
+                    let base: usize = 2;
+                    let result = self.reg_a / base.pow(combo.try_into().unwrap());
+                    self.reg_b = result;
+                }
+
+                // cdv
+                7 => {
+                    let combo = self.combo(operand);
+                    let base: usize = 2;
+                    let result = self.reg_a / base.pow(combo.try_into().unwrap());
+                    self.reg_c = result;
                 }
 
                 x => todo!("Opcode {} not implemented.", x),
@@ -205,7 +221,9 @@ fn main() -> Result<()> {
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
-    println!("Result = {}", result.get_output());
+    let output = result.get_output();
+    println!("Result = {}", output);
+    assert_eq!("3,1,4,3,1,7,1,6,3", output);
     //endregion
 
     //region Part 2
