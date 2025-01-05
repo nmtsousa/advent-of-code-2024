@@ -65,7 +65,7 @@ struct Computer {
     reg_b: usize,
     reg_c: usize,
     program: Vec<u8>,
-    outuput: Vec<u8>,
+    output: Vec<u8>,
 }
 
 impl Computer {
@@ -91,30 +91,55 @@ impl Computer {
             reg_b,
             reg_c,
             program,
-            outuput: vec![],
+            output: vec![],
         }
     }
     fn get_output(&self) -> String {
-        todo!("To implement");
+        self.output.iter().join(",")
     }
 
     fn execute(&mut self) {
-        let opcode = self.program[self.ins_ptr];
-        let operand = self.program[self.ins_ptr + 1];
+        while self.ins_ptr < self.program.len() {
+            let opcode = self.program[self.ins_ptr];
+            let operand = self.program[self.ins_ptr + 1];
 
-        match opcode {
+            match opcode {
+                // adv
+                0 => {
+                    let combo = self.combo(operand);
+                    let base: usize = 2;
+                    let result = self.reg_a / base.pow(combo.try_into().unwrap());
+                    self.reg_a = result;
+                },
 
-            // bst
-            2 => {
-                let combo = self.combo(operand);
-                let result = combo % 8;
-                self.reg_b = result;
-            },
+                // bst
+                2 => {
+                    let combo = self.combo(operand);
+                    let result = combo % 8;
+                    self.reg_b = result;
+                }
 
-            x => todo!("Opcode {} not implemented.", x),
+                // jnz
+                3 => {
+                    if self.reg_a != 0 {
+                        self.ins_ptr = operand.into();
+                        continue;
+                    }
+                },
+
+                // out
+                5 => {
+                    let combo = self.combo(operand);
+                    let result = combo % 8;
+                    self.output.push(result.try_into().unwrap());
+                }
+
+                x => todo!("Opcode {} not implemented.", x),
+            }
+            self.ins_ptr += 2;
         }
     }
-    
+
     fn combo(&self, operand: u8) -> usize {
         match operand {
             x if x < 4 => x.into(),
@@ -142,21 +167,24 @@ fn main() -> Result<()> {
         let mut lines = reader.lines().map_while(Result::ok);
         let mut comp = Computer::new(&mut lines);
         comp.execute();
-        // TODO: Solve Part 1 of the puzzle
         Ok(comp)
     }
 
     assert_eq!(1, part1(BufReader::new(EXAMPLE_1.as_bytes()))?.reg_b);
+
     assert_eq!(
         "0,1,2",
         part1(BufReader::new(EXAMPLE_2.as_bytes()))?.get_output()
     );
+
     {
         let test3 = part1(BufReader::new(EXAMPLE_3.as_bytes()))?;
         assert_eq!("4,2,5,6,7,7,7,7,3,1,0", test3.get_output());
         assert_eq!(0, test3.reg_a);
     }
+
     assert_eq!(7, part1(BufReader::new(EXAMPLE_4.as_bytes()))?.reg_b);
+
     assert_eq!(44354, part1(BufReader::new(EXAMPLE_5.as_bytes()))?.reg_b);
 
     assert_eq!(
