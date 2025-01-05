@@ -98,9 +98,30 @@ impl Computer {
         todo!("To implement");
     }
 
-    fn execute(&self) {
-        match self.program[self.ins_ptr] {
+    fn execute(&mut self) {
+        let opcode = self.program[self.ins_ptr];
+        let operand = self.program[self.ins_ptr + 1];
+
+        match opcode {
+
+            // bst
+            2 => {
+                let combo = self.combo(operand);
+                let result = combo % 8;
+                self.reg_b = result;
+            },
+
             x => todo!("Opcode {} not implemented.", x),
+        }
+    }
+    
+    fn combo(&self, operand: u8) -> usize {
+        match operand {
+            x if x < 4 => x.into(),
+            4 => self.reg_a,
+            5 => self.reg_b,
+            6 => self.reg_c,
+            _ => panic!("Combo operand {} not expected", operand),
         }
     }
 }
@@ -119,7 +140,7 @@ fn main() -> Result<()> {
 
     fn part1<R: BufRead>(reader: R) -> Result<Computer> {
         let mut lines = reader.lines().map_while(Result::ok);
-        let comp = Computer::new(&mut lines);
+        let mut comp = Computer::new(&mut lines);
         comp.execute();
         // TODO: Solve Part 1 of the puzzle
         Ok(comp)
