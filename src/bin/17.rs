@@ -59,6 +59,14 @@ Register C: 0
 Program: 0,1,5,4,3,0
 ";
 
+const TEST_2: &str = "\
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
+";
+
 #[derive(Debug)]
 struct Computer {
     ins_ptr: usize,
@@ -142,7 +150,8 @@ impl Computer {
                 5 => {
                     let combo = self.combo(operand);
                     let result = combo % 8;
-                    self.output.push(result.try_into().unwrap());
+                    let resu8: u8 = result.try_into().unwrap();
+                    self.output.push(resu8);
                 }
 
                 // bdv
@@ -175,6 +184,11 @@ impl Computer {
             6 => self.reg_c,
             _ => panic!("Combo operand {} not expected", operand),
         }
+    }
+
+    fn reset(&mut self) {
+        self.ins_ptr = 0;
+        self.output.clear();
     }
 }
 
@@ -227,17 +241,49 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut lines = reader.lines().map_while(Result::ok);
+        let mut comp = Computer::new(&mut lines);
+
+        let match_reversed: Vec<u8> = comp.program.clone().into_iter().rev().collect();
+        let mut reg_a_set: Vec<usize> = vec![];
+
+        reg_a_set.push(0);
+        for pos in 0..match_reversed.len() {
+            let new_candidates = reg_a_set
+                .into_iter()
+                .flat_map(|a| {
+                    let mut res = vec![];
+                    for i in 0..8 {
+                        let candidate = a.rotate_left(3) + i;
+                        comp.reset();
+                        comp.reg_a = candidate;
+                        comp.execute();
+
+
+                        if comp.output[0] == match_reversed[pos] {
+                            res.push(candidate);
+                        }
+                    }
+
+                    res
+                })
+                .collect();
+
+            reg_a_set = new_candidates;
+        }
+
+        reg_a_set.sort();
+        Ok(reg_a_set[0])
+    }
+
+    assert_eq!(117440, part2(BufReader::new(TEST_2.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
