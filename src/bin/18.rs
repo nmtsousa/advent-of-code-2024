@@ -42,13 +42,12 @@ fn main() -> Result<()> {
     //region Part 1
     println!("=== Part 1 ===");
 
-    fn part1<R: BufRead>(size:usize, bytes: usize, reader: R) -> Result<usize> {
+    fn part1<R: BufRead>(ram_size: usize, byte_count: usize, reader: R) -> Result<usize> {
         // TODO: Solve Part 1 of the puzzle
         let answer = reader.lines().flatten().count();
         Ok(answer)
     }
 
-    // TODO: Set the expected answer for the test input
     assert_eq!(22, part1(7, 12, BufReader::new(TEST.as_bytes()))?);
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
