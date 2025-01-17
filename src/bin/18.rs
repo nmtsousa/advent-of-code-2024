@@ -102,7 +102,7 @@ impl Puzzle {
         }
     }
 
-    fn count_steps(&self) -> usize {
+    fn shortest_path(&self) -> usize {
         match self.tiles[self.size - 1][self.size - 1] {
             Tile::Step(x) => x,
             _ => panic!("Couldn't find optimal path."),
@@ -137,7 +137,7 @@ fn main() -> Result<()> {
         println!("Solving puzzle...");
         puzzle.solve();
 
-        Ok(puzzle.count_steps())
+        Ok(puzzle.shortest_path())
     }
 
     assert_eq!(22, part1(7, 12, BufReader::new(TEST.as_bytes()))?);
