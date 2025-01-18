@@ -46,7 +46,7 @@ struct Puzzle {
 enum Tile {
     Free,
     Ocuppied,
-    Step(usize),
+    Step,
 }
 
 impl Puzzle {
@@ -61,18 +61,18 @@ impl Puzzle {
         self.tiles[row][col] = Tile::Ocuppied;
     }
 
-    fn solve(&mut self) -> bool {
+    fn solve(&mut self) -> Option<usize> {
         let mut tips: Vec<(usize, usize)> = vec![(0, 0)];
         let mut path_length = 0;
         loop {
             if tips.is_empty() {
-                return false;
+                return Option::None;
             }
 
             let mut new_tips = vec![];
             for (row, col) in tips {
                 if self.tiles[row][col] == Tile::Free {
-                    self.tiles[row][col] = Tile::Step(path_length);
+                    self.tiles[row][col] = Tile::Step;
                     if row + 1 < self.size {
                         new_tips.push((row + 1, col));
                     }
@@ -87,18 +87,11 @@ impl Puzzle {
                     }
                 }
                 if row == self.size - 1 && col == self.size - 1 {
-                    return true;
+                    return Option::Some(path_length);
                 }
             }
             path_length += 1;
             tips = new_tips;
-        }
-    }
-
-    fn shortest_path(&self) -> usize {
-        match self.tiles[self.size - 1][self.size - 1] {
-            Tile::Step(x) => x,
-            _ => panic!("Couldn't find optimal path."),
         }
     }
 
@@ -107,7 +100,7 @@ impl Puzzle {
             row.iter().for_each(|t| match t {
                 Tile::Free => print!("."),
                 Tile::Ocuppied => print!("#"),
-                Tile::Step(_) => print!("O"),
+                Tile::Step => print!("O"),
             });
             println!();
         });
@@ -116,7 +109,7 @@ impl Puzzle {
     fn clear(&mut self) {
         for row in 0..self.size {
             for col in 0..self.size {
-                if matches!(self.tiles[row][col], Tile::Step(_)) {
+                if self.tiles[row][col] == Tile::Step {
                     self.tiles[row][col] = Tile::Free;
                 }
             }
@@ -144,9 +137,7 @@ fn main() -> Result<()> {
             puzzle.push_byte(coords[1], coords[0]);
         }
 
-        puzzle.solve();
-
-        Ok(puzzle.shortest_path())
+        Ok(puzzle.solve().expect("Failed to solve puzzle."))
     }
 
     assert_eq!(22, part1(7, 12, BufReader::new(TEST.as_bytes()))?);
@@ -174,7 +165,7 @@ fn main() -> Result<()> {
 
             puzzle.push_byte(coords[1], coords[0]);
 
-            if !puzzle.solve() {
+            if puzzle.solve().is_none() {
                 return Ok(format!("{},{}", coords[0], coords[1]));
             }
             puzzle.clear();
