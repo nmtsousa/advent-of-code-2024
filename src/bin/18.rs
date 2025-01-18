@@ -62,34 +62,35 @@ impl Puzzle {
     }
 
     fn solve(&mut self) -> bool {
-        let mut tips: Vec<(usize, usize, usize)> = vec![(0, 0, 0)];
+        let mut tips: Vec<(usize, usize)> = vec![(0, 0)];
+        let mut path_length = 0;
         loop {
-            if tips.len() == 0 {
+            if tips.is_empty() {
                 return false;
             }
 
             let mut new_tips = vec![];
-            for (row, col, length) in tips {
+            for (row, col) in tips {
                 if self.tiles[row][col] == Tile::Free {
-                    self.tiles[row][col] = Tile::Step(length);
-                    let new_length = length + 1;
+                    self.tiles[row][col] = Tile::Step(path_length);
                     if row + 1 < self.size {
-                        new_tips.push((row + 1, col, new_length));
+                        new_tips.push((row + 1, col));
                     }
                     if col + 1 < self.size {
-                        new_tips.push((row, col + 1, new_length));
+                        new_tips.push((row, col + 1));
                     }
                     if row > 0 {
-                        new_tips.push((row - 1, col, new_length));
+                        new_tips.push((row - 1, col));
                     }
                     if col > 0 {
-                        new_tips.push((row, col - 1, new_length));
+                        new_tips.push((row, col - 1));
                     }
                 }
                 if row == self.size - 1 && col == self.size - 1 {
                     return true;
                 }
             }
+            path_length += 1;
             tips = new_tips;
         }
     }
