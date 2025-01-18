@@ -61,9 +61,13 @@ impl Puzzle {
         self.tiles[row][col] = Tile::Ocuppied;
     }
 
-    fn solve(&mut self) {
+    fn solve(&mut self) -> bool {
         let mut tips: Vec<(usize, usize, usize)> = vec![(0, 0, 0)];
         loop {
+            if tips.len() == 0 {
+                return false;
+            }
+
             let mut new_tips = vec![];
             for (row, col, length) in tips {
                 if self.tiles[row][col] == Tile::Free {
@@ -83,7 +87,7 @@ impl Puzzle {
                     }
                 }
                 if row == self.size - 1 && col == self.size - 1 {
-                    return;
+                    return true;
                 }
             }
             tips = new_tips;
@@ -107,6 +111,16 @@ impl Puzzle {
             println!();
         });
     }
+
+    fn clear(&mut self) {
+        for row in 0..self.size {
+            for col in 0..self.size {
+                if matches!(self.tiles[row][col], Tile::Step(_)) {
+                    self.tiles[row][col] = Tile::Free;
+                }
+            }
+        }
+    }
 }
 
 fn main() -> Result<()> {
@@ -119,7 +133,6 @@ fn main() -> Result<()> {
         let mut lines = reader.lines().map_while(Result::ok);
 
         let mut puzzle = Puzzle::new(ram_size);
-
         for _ in 0..byte_count {
             let coords: Vec<usize> = lines
                 .next()
@@ -144,18 +157,34 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
-    //endregion
+    println!("\n=== Part 2 ===");
 
+    fn part2<R: BufRead>(ram_size: usize, reader: R) -> Result<String> {
+        let mut puzzle = Puzzle::new(ram_size);
+
+        let mut lines = reader.lines().map_while(Result::ok);
+        loop {
+            let coords: Vec<usize> = lines
+                .next()
+                .expect("Line was found")
+                .split(",")
+                .map(|v| v.parse::<usize>().expect("Parseable numer."))
+                .collect();
+
+            puzzle.push_byte(coords[1], coords[0]);
+
+            if !puzzle.solve() {
+                return Ok(format!("{},{}", coords[0], coords[1]));
+            }
+            puzzle.clear();
+        }
+    }
+
+    assert_eq!("6,1", part2(7, BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(71, input_file)?);
+    println!("Result = {}", result);
+    assert_eq!("46,23", result);
     Ok(())
 }
