@@ -57,7 +57,6 @@ impl Puzzle {
                 .next()
                 .expect("Line was found")
                 .split(",")
-                .into_iter()
                 .map(|v| v.parse::<usize>().expect("Parseable numer."))
                 .collect();
             tiles[coords[1]][coords[0]] = Tile::Ocuppied;
@@ -66,39 +65,31 @@ impl Puzzle {
     }
 
     fn solve(&mut self) {
-        if !self._try_solve(0, 0, 0) {
-            panic!("Failed to solve puzzle.");
-        }
-    }
-
-    fn _try_solve(&mut self, row: usize, col: usize, length: usize) -> bool {
-        if row >= self.size || col >= self.size {
-            return false;
-        }
-        match self.tiles[row][col] {
-            Tile::Ocuppied => false,
-            Tile::Step(x) if x < length => false,
-            _ => {
-                self.tiles[row][col] = Tile::Step(length);
-
-                if row == self.size - 1 && col == self.size - 1 {
-                    return true;
+        let mut tips: Vec<(usize, usize, usize)> = vec![(0, 0, 0)];
+        loop {
+            let mut new_tips = vec![];
+            for (row, col, length) in tips {
+                if self.tiles[row][col] == Tile::Free {
+                    self.tiles[row][col] = Tile::Step(length);
+                    let new_length = length + 1;
+                    if row + 1 < self.size {
+                        new_tips.push((row + 1, col, new_length));
+                    }
+                    if col + 1 < self.size {
+                        new_tips.push((row, col + 1, new_length));
+                    }
+                    if row > 0 {
+                        new_tips.push((row - 1, col, new_length));
+                    }
+                    if col > 0 {
+                        new_tips.push((row, col - 1, new_length));
+                    }
                 }
-
-                self._try_moving(row, col, length + 1);
-                true
+                if row == self.size - 1 && col == self.size - 1 {
+                    return;
+                }
             }
-        }
-    }
-
-    fn _try_moving(&mut self, row: usize, col: usize, length: usize) {
-        self._try_solve(row, col + 1, length);
-        self._try_solve(row + 1, col, length);
-        if row > 0 {
-            self._try_solve(row - 1, col, length);
-        }
-        if col > 0 {
-            self._try_solve(row, col - 1, length);
+            tips = new_tips;
         }
     }
 
@@ -111,15 +102,12 @@ impl Puzzle {
 
     fn _dump_state(&self) {
         self.tiles.iter().for_each(|row| {
-            let row: String = row
-                .iter()
-                .map(|t| match t {
-                    Tile::Free => '.',
-                    Tile::Ocuppied => '#',
-                    Tile::Step(_) => 'O',
-                })
-                .collect();
-            println!("{}", row);
+            row.iter().for_each(|t| match t {
+                Tile::Free => print!("."),
+                Tile::Ocuppied => print!("#"),
+                Tile::Step(x) => print!("O"), //print!("{}", x),
+            });
+            println!("");
         });
     }
 }
