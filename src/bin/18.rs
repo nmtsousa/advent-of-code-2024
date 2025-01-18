@@ -50,18 +50,15 @@ enum Tile {
 }
 
 impl Puzzle {
-    fn new(size: usize, lines: &mut impl Iterator<Item = String>, byte_count: usize) -> Self {
-        let mut tiles = vec![vec![Tile::Free; size]; size];
-        for _ in 0..byte_count {
-            let coords: Vec<usize> = lines
-                .next()
-                .expect("Line was found")
-                .split(",")
-                .map(|v| v.parse::<usize>().expect("Parseable numer."))
-                .collect();
-            tiles[coords[1]][coords[0]] = Tile::Ocuppied;
+    fn new(size: usize) -> Self {
+        Self {
+            size,
+            tiles: vec![vec![Tile::Free; size]; size],
         }
-        Self { size, tiles }
+    }
+
+    fn push_byte(&mut self, row: usize, col: usize) {
+        self.tiles[row][col] = Tile::Ocuppied;
     }
 
     fn solve(&mut self) {
@@ -105,9 +102,9 @@ impl Puzzle {
             row.iter().for_each(|t| match t {
                 Tile::Free => print!("."),
                 Tile::Ocuppied => print!("#"),
-                Tile::Step(x) => print!("O"), //print!("{}", x),
+                Tile::Step(_) => print!("O"),
             });
-            println!("");
+            println!();
         });
     }
 }
@@ -120,9 +117,19 @@ fn main() -> Result<()> {
 
     fn part1<R: BufRead>(ram_size: usize, byte_count: usize, reader: R) -> Result<usize> {
         let mut lines = reader.lines().map_while(Result::ok);
-        println!("Reading puzzle...");
-        let mut puzzle = Puzzle::new(ram_size, &mut lines, byte_count);
-        println!("Solving puzzle...");
+
+        let mut puzzle = Puzzle::new(ram_size);
+
+        for _ in 0..byte_count {
+            let coords: Vec<usize> = lines
+                .next()
+                .expect("Line was found")
+                .split(",")
+                .map(|v| v.parse::<usize>().expect("Parseable numer."))
+                .collect();
+            puzzle.push_byte(coords[1], coords[0]);
+        }
+
         puzzle.solve();
 
         Ok(puzzle.shortest_path())
@@ -133,6 +140,7 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(71, 1024, input_file)?);
     println!("Result = {}", result);
+    assert_eq!(324, result);
     //endregion
 
     //region Part 2
