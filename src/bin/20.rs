@@ -136,7 +136,42 @@ impl RaceTrack {
     }
 
     fn count_cheats(&self, pico_seconds: usize) -> usize {
-        todo!()
+        let mut count = 0;
+        for row in 0..self.row_count {
+            for col in 0..self.col_count {
+                if let Tile::Path(this) = self.map[row][col] {
+                    if row > 1 && self.map[row - 1][col] == Tile::Wall {
+                        if let Tile::Path(other) = self.map[row - 2][col] {
+                            if other > this && other - this - 2 >= pico_seconds {
+                                count += 1;
+                            }
+                        }
+                    }
+                    if row + 2 < self.row_count && self.map[row + 1][col] == Tile::Wall {
+                        if let Tile::Path(other) = self.map[row + 2][col] {
+                            if other > this && other - this - 2 >= pico_seconds {
+                                count += 1;
+                            }
+                        }
+                    }
+                    if col > 1 && self.map[row][col - 1] == Tile::Wall {
+                        if let Tile::Path(other) = self.map[row][col - 2] {
+                            if other > this && other - this - 2 >= pico_seconds {
+                                count += 1;
+                            }
+                        }
+                    }
+                    if col + 2 < self.col_count && self.map[row][col + 1] == Tile::Wall {
+                        if let Tile::Path(other) = self.map[row][col + 2] {
+                            if other > this && other - this - 2 >= pico_seconds {
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        count
     }
 }
 
@@ -189,6 +224,7 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(100, input_file)?);
     println!("Result = {}", result);
+    assert_eq!(1323, result);
     //endregion
 
     //region Part 2
