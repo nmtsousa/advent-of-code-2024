@@ -29,6 +29,8 @@ const TEST: &str = "\
 
 #[derive(Debug)]
 struct RaceTrack {
+    row_count: usize,
+    col_count: usize,
     start: (usize, usize),
     end: (usize, usize),
     map: Vec<Vec<Tile>>,
@@ -45,7 +47,7 @@ impl RaceTrack {
     fn new(lines: &mut impl Iterator<Item = String>) -> Self {
         let mut start = Option::None;
         let mut end = Option::None;
-        let mut map = vec![];
+        let mut map: Vec<Vec<Tile>> = vec![];
 
         for (row_index, rowstr) in lines.enumerate() {
             map.push(
@@ -69,6 +71,8 @@ impl RaceTrack {
             );
         }
         Self {
+            row_count: map.len(),
+            col_count: map[0].len(),
             start: start.expect("Start position expected in map"),
             end: end.expect("End position expected in map"),
             map,
@@ -76,9 +80,7 @@ impl RaceTrack {
     }
 
     fn solve(&mut self) {
-        let row_count = self.map.len();
-        let col_count = self.map[0].len();
-        let mut visited = vec![vec![false; col_count]; row_count];
+        let mut visited = vec![vec![false; self.col_count]; self.row_count];
         let mut tips = vec![Rc::new(PathStep::new(self.start))];
         let mut path_length = 0;
 
@@ -92,10 +94,10 @@ impl RaceTrack {
                 let (row, col) = step.pos;
                 if !visited[row][col] && self.map[row][col] == Tile::Track {
                     visited[row][col] = true;
-                    if row + 1 < row_count {
+                    if row + 1 < self.row_count {
                         new_tips.push(Rc::new(PathStep::new_child((row + 1, col), &step)));
                     }
-                    if col + 1 < col_count {
+                    if col + 1 < self.col_count {
                         new_tips.push(Rc::new(PathStep::new_child((row, col + 1), &step)));
                     }
                     if row > 0 {
