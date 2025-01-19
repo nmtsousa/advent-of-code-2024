@@ -4,6 +4,7 @@ use code_timing_macros::time_snippet;
 use const_format::concatcp;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
+use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 
 const DAY: &str = "19";
@@ -26,6 +27,7 @@ bbrgwb
 struct Linen {
     towel_map: HashMap<String, Vec<String>>,
     impossible_towel: HashSet<String>,
+    count_cache: HashMap<String, usize>,
 }
 
 impl Linen {
@@ -40,6 +42,7 @@ impl Linen {
         Self {
             towel_map,
             impossible_towel: HashSet::new(),
+            count_cache: HashMap::new(),
         }
     }
 
@@ -63,6 +66,37 @@ impl Linen {
         self.impossible_towel.insert(line.to_owned());
 
         false
+    }
+
+    fn possible_combo(&mut self, line: &str) -> usize {
+        if line.is_empty() {
+            return 1;
+        }
+
+        if self.impossible_towel.contains(line) {
+            return 0;
+        }
+
+        if let Some(c) = self.count_cache.get(line) {
+            return *c;
+        }
+
+        let mut count = 0;
+        if let Some(towels) = self.towel_map.get_mut(&line[0..1]) {
+            for towel in towels.clone().iter() {
+                if line.starts_with(towel) {
+                    count += self.possible_combo(&line[towel.len()..]);
+                }
+            }
+        }
+
+        if count == 0 {
+            self.impossible_towel.insert(line.to_owned());
+        }
+
+        self.count_cache.insert(line.to_owned(), count);
+
+        count
     }
 }
 
@@ -105,18 +139,37 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
-    //endregion
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let mut lines = reader.lines().map_while(Result::ok);
+
+        let towels = lines
+            .next()
+            .expect("Line with towels")
+            .split(",")
+            .map(|s| s.trim().to_owned())
+            .collect();
+
+        let mut linen = Linen::new(towels);
+
+        lines.next().expect("Empty line");
+
+        let mut count = 0;
+        for l in lines {
+            let partial = linen.possible_combo(&l);
+            count += partial;
+        }
+
+        Ok(count)
+    }
+
+    assert_eq!(16, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
+    assert_eq!(604622004681855, result);
 
     Ok(())
 }
