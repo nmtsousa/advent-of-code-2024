@@ -2,6 +2,7 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -23,24 +24,44 @@ bbrgwb
 
 #[derive(Debug)]
 struct Linen {
-    towels: Vec<String>,
+    towel_map: HashMap<String, Vec<String>>,
+    impossible_towel: HashSet<String>,
 }
 
 impl Linen {
     fn new(towels: Vec<String>) -> Self {
-        Self { towels }
+        let mut towel_map = HashMap::new();
+        for t in towels {
+            towel_map
+                .entry(t[0..1].to_owned())
+                .or_insert(vec![])
+                .push(t);
+        }
+        Self {
+            towel_map,
+            impossible_towel: HashSet::new(),
+        }
     }
 
-    fn can_be_made(&self, line: &str) -> bool {
+    fn can_be_made(&mut self, line: &str) -> bool {
         if line.is_empty() {
             return true;
         }
 
-        for towel in self.towels.iter() {
-            if line.starts_with(towel) && self.can_be_made(&line[towel.len()..]) {
-                return true;
+        if self.impossible_towel.contains(line) {
+            return false;
+        }
+
+        if let Some(towels) = self.towel_map.get_mut(&line[0..1]) {
+            for towel in towels.clone().iter() {
+                if line.starts_with(towel) && self.can_be_made(&line[towel.len()..]) {
+                    return true;
+                }
             }
         }
+
+        self.impossible_towel.insert(line.to_owned());
+
         false
     }
 }
@@ -61,19 +82,16 @@ fn main() -> Result<()> {
             .map(|s| s.trim().to_owned())
             .collect();
 
-        let linen = Linen::new(towels);
+        let mut linen = Linen::new(towels);
 
         lines.next().expect("Empty line");
 
         let mut count = 0;
         for l in lines {
-            println!("{l}");
             if linen.can_be_made(&l) {
                 count += 1;
             }
         }
-
-        println!("End");
 
         Ok(count)
     }
@@ -83,6 +101,7 @@ fn main() -> Result<()> {
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
     println!("Result = {}", result);
+    assert_eq!(306, result);
     //endregion
 
     //region Part 2
