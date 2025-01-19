@@ -21,6 +21,30 @@ brgr
 bbrgwb
 ";
 
+#[derive(Debug)]
+struct Linen {
+    towels: Vec<String>,
+}
+
+impl Linen {
+    fn new(towels: Vec<String>) -> Self {
+        Self { towels }
+    }
+
+    fn can_be_made(&self, line: &str) -> bool {
+        if line.is_empty() {
+            return true;
+        }
+
+        for towel in self.towels.iter() {
+            if line.starts_with(towel) && self.can_be_made(&line[towel.len()..]) {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -28,9 +52,30 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
-        // TODO: Solve Part 1 of the puzzle
-        let answer = reader.lines().flatten().count();
-        Ok(answer)
+        let mut lines = reader.lines().map_while(Result::ok);
+
+        let towels = lines
+            .next()
+            .expect("Line with towels")
+            .split(",")
+            .map(|s| s.trim().to_owned())
+            .collect();
+
+        let linen = Linen::new(towels);
+
+        lines.next().expect("Empty line");
+
+        let mut count = 0;
+        for l in lines {
+            println!("{l}");
+            if linen.can_be_made(&l) {
+                count += 1;
+            }
+        }
+
+        println!("End");
+
+        Ok(count)
     }
 
     assert_eq!(6, part1(BufReader::new(TEST.as_bytes()))?);
