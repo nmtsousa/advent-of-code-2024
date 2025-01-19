@@ -4,7 +4,6 @@ use code_timing_macros::time_snippet;
 use const_format::concatcp;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 
 const DAY: &str = "19";
