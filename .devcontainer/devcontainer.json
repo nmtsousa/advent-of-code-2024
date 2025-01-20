@@ -7,7 +7,12 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"Gruntfuggly.todo-tree"
+				"Gruntfuggly.todo-tree",
+				"vadimcn.vscode-lldb",
+				"fill-labs.dependi",
+				"tamasfe.even-better-toml",
+				"rust-lang.rust-analyzer",
+				"usernamehw.errorlens"
 			]
 		}
 	}
