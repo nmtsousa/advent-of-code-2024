@@ -115,7 +115,7 @@ impl RaceTrack {
                         current = s.parent.clone();
                     }
 
-                    self._dump_track();
+                    //self._dump_track();
                     return;
                 }
             }
