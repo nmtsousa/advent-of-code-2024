@@ -82,7 +82,7 @@ impl RaceTrack {
     fn solve(&mut self) {
         let mut visited = vec![vec![false; self.col_count]; self.row_count];
         let mut tips = vec![Rc::new(PathStep::new(self.start))];
-        let mut path_length = 0;
+        let mut path_length = 1;
 
         loop {
             if tips.is_empty() {
